@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        数据分析
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- 概览统计 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-tasks"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总任务数</span>
+                                    <span class="info-box-number" id="total-tasks">
+                                        {{ analytics.summary.total_tasks if analytics.summary else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-file-alt"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总内容数</span>
+                                    <span class="info-box-number" id="total-content">
+                                        {{ analytics.summary.total_content if analytics.summary else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-percentage"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">成功率</span>
+                                    <span class="info-box-number" id="success-rate">
+                                        {{ analytics.summary.success_rate if analytics.summary else 0 }}%
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">平均处理时间</span>
+                                    <span class="info-box-number" id="avg-time">
+                                        {{ analytics.summary.avg_processing_time if analytics.summary else 0 }}s
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- 任务状态分布 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">任务状态分布</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="taskStatusChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务类型分布 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">任务类型分布</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="taskTypeChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- 任务创建趋势 -->
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">最近7天任务创建趋势</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="taskTrendChart" width="600" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系统性能 -->
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">系统性能</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="progress-group">
+                                        <span class="progress-text">CPU使用率</span>
+                                        <span class="float-right">
+                                            <b id="cpu-usage">{{ analytics.performance.cpu_usage if analytics.performance else 0 }}</b>%
+                                        </span>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-primary" 
+                                                 style="width: {{ analytics.performance.cpu_usage if analytics.performance else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="progress-group">
+                                        <span class="progress-text">内存使用率</span>
+                                        <span class="float-right">
+                                            <b id="memory-usage">{{ analytics.performance.memory_usage if analytics.performance else 0 }}</b>%
+                                        </span>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-success" 
+                                                 style="width: {{ analytics.performance.memory_usage if analytics.performance else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="progress-group">
+                                        <span class="progress-text">磁盘使用率</span>
+                                        <span class="float-right">
+                                            <b id="disk-usage">{{ analytics.performance.disk_usage if analytics.performance else 0 }}</b>%
+                                        </span>
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-warning" 
+                                                 style="width: {{ analytics.performance.disk_usage if analytics.performance else 0 }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- 内容来源分布 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">内容来源分布</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="contentSourceChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 详细统计表 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">详细统计</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            <tr>
+                                                <td>平均内容质量分数</td>
+                                                <td><span class="badge badge-success">{{ analytics.content.quality_score if analytics.content else 0 }}</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>平均内容长度</td>
+                                                <td>{{ analytics.content.avg_length if analytics.content else 0 }} 字符</td>
+                                            </tr>
+                                            <tr>
+                                                <td>今日新增任务</td>
+                                                <td id="today-tasks">0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>今日完成任务</td>
+                                                <td id="today-completed">0</td>
+                                            </tr>
+                                            <tr>
+                                                <td>系统运行时间</td>
+                                                <td id="uptime">计算中...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// 分析数据
+const analyticsData = {{ analytics | tojson | safe }};
+
+// 任务状态分布图
+const taskStatusCtx = document.getElementById('taskStatusChart').getContext('2d');
+const taskStatusData = analyticsData.tasks ? analyticsData.tasks.by_status : {};
+new Chart(taskStatusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(taskStatusData),
+        datasets: [{
+            data: Object.values(taskStatusData),
+            backgroundColor: [
+                '#28a745', // completed - 绿色
+                '#dc3545', // failed - 红色
+                '#ffc107', // pending - 黄色
+                '#17a2b8', // running - 蓝色
+                '#6c757d'  // cancelled - 灰色
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: {
+            position: 'bottom'
+        }
+    }
+});
+
+// 任务类型分布图
+const taskTypeCtx = document.getElementById('taskTypeChart').getContext('2d');
+const taskTypeData = analyticsData.tasks ? analyticsData.tasks.by_type : {};
+new Chart(taskTypeCtx, {
+    type: 'pie',
+    data: {
+        labels: Object.keys(taskTypeData),
+        datasets: [{
+            data: Object.values(taskTypeData),
+            backgroundColor: [
+                '#007bff',
+                '#28a745',
+                '#ffc107',
+                '#dc3545',
+                '#17a2b8',
+                '#6f42c1'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        legend: {
+            position: 'bottom'
+        }
+    }
+});
+
+// 任务创建趋势图
+const taskTrendCtx = document.getElementById('taskTrendChart').getContext('2d');
+const trendData = analyticsData.tasks ? analyticsData.tasks.daily_trend : {};
+new Chart(taskTrendCtx, {
+    type: 'line',
+    data: {
+        labels: Object.keys(trendData),
+        datasets: [{
+            label: '任务数量',
+            data: Object.values(trendData),
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 内容来源分布图
+const contentSourceCtx = document.getElementById('contentSourceChart').getContext('2d');
+const contentSourceData = analyticsData.content ? analyticsData.content.by_source : {};
+new Chart(contentSourceCtx, {
+    type: 'bar',
+    data: {
+        labels: Object.keys(contentSourceData),
+        datasets: [{
+            label: '内容数量',
+            data: Object.values(contentSourceData),
+            backgroundColor: '#28a745'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 定时刷新数据
+function refreshAnalytics() {
+    fetch('/api/analytics')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 更新概览统计
+            document.getElementById('total-tasks').textContent = data.data.summary.total_tasks;
+            document.getElementById('total-content').textContent = data.data.summary.total_content;
+            document.getElementById('success-rate').textContent = data.data.summary.success_rate + '%';
+            document.getElementById('avg-time').textContent = data.data.summary.avg_processing_time + 's';
+            
+            // 更新性能数据
+            if (data.data.performance) {
+                document.getElementById('cpu-usage').textContent = data.data.performance.cpu_usage;
+                document.getElementById('memory-usage').textContent = data.data.performance.memory_usage;
+                document.getElementById('disk-usage').textContent = data.data.performance.disk_usage;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('刷新分析数据失败:', error);
+    });
+}
+
+// 每30秒刷新一次数据
+setInterval(refreshAnalytics, 30000);
+
+// 计算系统运行时间
+function updateUptime() {
+    const startTime = new Date().getTime() - (Math.random() * 3600000); // 模拟启动时间
+    const now = new Date().getTime();
+    const uptime = Math.floor((now - startTime) / 1000);
+    
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = uptime % 60;
+    
+    document.getElementById('uptime').textContent = `${hours}小时 ${minutes}分钟 ${seconds}秒`;
+}
+
+// 每秒更新运行时间
+setInterval(updateUptime, 1000);
+updateUptime();
+</script>
+{% endblock %}

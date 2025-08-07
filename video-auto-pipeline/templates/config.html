@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}系统配置{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-cog"></i>
+                        系统配置
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- 数据库配置 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">数据库配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="database-config-form">
+                                        <div class="form-group">
+                                            <label for="db-path">数据库路径</label>
+                                            <input type="text" class="form-control" id="db-path" 
+                                                   value="{{ config.database.path if config.database else 'tasks.db' }}">
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="backup-enabled"
+                                                   {{ 'checked' if config.database and config.database.backup_enabled else '' }}>
+                                            <label class="form-check-label" for="backup-enabled">
+                                                启用自动备份
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="backup-interval">备份间隔（秒）</label>
+                                            <input type="number" class="form-control" id="backup-interval" 
+                                                   value="{{ config.database.backup_interval if config.database else 3600 }}">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Web服务配置 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">Web服务配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="web-config-form">
+                                        <div class="form-group">
+                                            <label for="web-host">监听地址</label>
+                                            <input type="text" class="form-control" id="web-host" 
+                                                   value="{{ config.web.host if config.web else '0.0.0.0' }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="web-port">端口</label>
+                                            <input type="number" class="form-control" id="web-port" 
+                                                   value="{{ config.web.port if config.web else 5001 }}">
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="debug-mode"
+                                                   {{ 'checked' if config.web and config.web.debug else '' }}>
+                                            <label class="form-check-label" for="debug-mode">
+                                                调试模式
+                                            </label>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- 任务管理配置 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">任务管理配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="task-config-form">
+                                        <div class="form-group">
+                                            <label for="max-workers">最大工作线程数</label>
+                                            <input type="number" class="form-control" id="max-workers" 
+                                                   value="{{ config.task_manager.max_workers if config.task_manager else 3 }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="queue-size">队列大小</label>
+                                            <input type="number" class="form-control" id="queue-size" 
+                                                   value="{{ config.task_manager.queue_size if config.task_manager else 100 }}">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 内容采集配置 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">内容采集配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="content-config-form">
+                                        <div class="form-group">
+                                            <label for="fetch-timeout">请求超时（秒）</label>
+                                            <input type="number" class="form-control" id="fetch-timeout" 
+                                                   value="{{ config.content_fetch.timeout if config.content_fetch else 30 }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="retry-count">重试次数</label>
+                                            <input type="number" class="form-control" id="retry-count" 
+                                                   value="{{ config.content_fetch.retry_count if config.content_fetch else 3 }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="user-agent">User Agent</label>
+                                            <input type="text" class="form-control" id="user-agent" 
+                                                   value="{{ config.content_fetch.user_agent if config.content_fetch else 'VideoAutoPipeline/1.0' }}">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- 监控配置 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">监控配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="monitoring-config-form">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="monitoring-enabled"
+                                                   {{ 'checked' if config.monitoring and config.monitoring.enabled else 'checked' }}>
+                                            <label class="form-check-label" for="monitoring-enabled">
+                                                启用监控
+                                            </label>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="monitoring-interval">监控间隔（秒）</label>
+                                            <input type="number" class="form-control" id="monitoring-interval" 
+                                                   value="{{ config.monitoring.interval if config.monitoring else 60 }}">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="retention-days">数据保留天数</label>
+                                            <input type="number" class="form-control" id="retention-days" 
+                                                   value="{{ config.monitoring.retention_days if config.monitoring else 30 }}">
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 操作按钮 -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title">操作</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="btn-group-vertical w-100">
+                                        <button type="button" class="btn btn-primary mb-2" onclick="saveConfig()">
+                                            <i class="fas fa-save"></i> 保存配置
+                                        </button>
+                                        <button type="button" class="btn btn-secondary mb-2" onclick="resetConfig()">
+                                            <i class="fas fa-undo"></i> 重置配置
+                                        </button>
+                                        <button type="button" class="btn btn-info mb-2" onclick="exportConfig()">
+                                            <i class="fas fa-download"></i> 导出配置
+                                        </button>
+                                        <button type="button" class="btn btn-warning" onclick="importConfig()">
+                                            <i class="fas fa-upload"></i> 导入配置
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导入配置模态框 -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">导入配置</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="config-file">选择配置文件</label>
+                    <input type="file" class="form-control-file" id="config-file" accept=".json">
+                </div>
+                <div class="form-group">
+                    <label for="config-text">或粘贴配置JSON</label>
+                    <textarea class="form-control" id="config-text" rows="10" placeholder="粘贴配置JSON..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="doImportConfig()">导入</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 保存配置
+function saveConfig() {
+    const config = {
+        database: {
+            path: document.getElementById('db-path').value,
+            backup_enabled: document.getElementById('backup-enabled').checked,
+            backup_interval: parseInt(document.getElementById('backup-interval').value)
+        },
+        web: {
+            host: document.getElementById('web-host').value,
+            port: parseInt(document.getElementById('web-port').value),
+            debug: document.getElementById('debug-mode').checked
+        },
+        task_manager: {
+            max_workers: parseInt(document.getElementById('max-workers').value),
+            queue_size: parseInt(document.getElementById('queue-size').value)
+        },
+        content_fetch: {
+            timeout: parseInt(document.getElementById('fetch-timeout').value),
+            retry_count: parseInt(document.getElementById('retry-count').value),
+            user_agent: document.getElementById('user-agent').value
+        },
+        monitoring: {
+            enabled: document.getElementById('monitoring-enabled').checked,
+            interval: parseInt(document.getElementById('monitoring-interval').value),
+            retention_days: parseInt(document.getElementById('retention-days').value)
+        }
+    };
+
+    fetch('/api/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', '配置保存成功');
+        } else {
+            showAlert('danger', '配置保存失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('danger', '配置保存失败: ' + error.message);
+    });
+}
+
+// 重置配置
+function resetConfig() {
+    if (confirm('确定要重置所有配置吗？')) {
+        location.reload();
+    }
+}
+
+// 导出配置
+function exportConfig() {
+    fetch('/api/config')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const configJson = JSON.stringify(data.data, null, 2);
+            const blob = new Blob([configJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'config.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            showAlert('danger', '导出配置失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('danger', '导出配置失败: ' + error.message);
+    });
+}
+
+// 导入配置
+function importConfig() {
+    $('#importModal').modal('show');
+}
+
+// 执行导入配置
+function doImportConfig() {
+    const fileInput = document.getElementById('config-file');
+    const textInput = document.getElementById('config-text');
+    
+    let configData = null;
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                configData = JSON.parse(e.target.result);
+                updateConfigForm(configData);
+                $('#importModal').modal('hide');
+                showAlert('success', '配置导入成功');
+            } catch (error) {
+                showAlert('danger', '配置文件格式错误: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+    } else if (textInput.value.trim()) {
+        try {
+            configData = JSON.parse(textInput.value);
+            updateConfigForm(configData);
+            $('#importModal').modal('hide');
+            showAlert('success', '配置导入成功');
+        } catch (error) {
+            showAlert('danger', '配置JSON格式错误: ' + error.message);
+        }
+    } else {
+        showAlert('warning', '请选择配置文件或粘贴配置JSON');
+    }
+}
+
+// 更新配置表单
+function updateConfigForm(config) {
+    if (config.database) {
+        document.getElementById('db-path').value = config.database.path || 'tasks.db';
+        document.getElementById('backup-enabled').checked = config.database.backup_enabled || false;
+        document.getElementById('backup-interval').value = config.database.backup_interval || 3600;
+    }
+    
+    if (config.web) {
+        document.getElementById('web-host').value = config.web.host || '0.0.0.0';
+        document.getElementById('web-port').value = config.web.port || 5001;
+        document.getElementById('debug-mode').checked = config.web.debug || false;
+    }
+    
+    if (config.task_manager) {
+        document.getElementById('max-workers').value = config.task_manager.max_workers || 3;
+        document.getElementById('queue-size').value = config.task_manager.queue_size || 100;
+    }
+    
+    if (config.content_fetch) {
+        document.getElementById('fetch-timeout').value = config.content_fetch.timeout || 30;
+        document.getElementById('retry-count').value = config.content_fetch.retry_count || 3;
+        document.getElementById('user-agent').value = config.content_fetch.user_agent || 'VideoAutoPipeline/1.0';
+    }
+    
+    if (config.monitoring) {
+        document.getElementById('monitoring-enabled').checked = config.monitoring.enabled !== false;
+        document.getElementById('monitoring-interval').value = config.monitoring.interval || 60;
+        document.getElementById('retention-days').value = config.monitoring.retention_days || 30;
+    }
+}
+
+// 显示提示信息
+function showAlert(type, message) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+    
+    // 移除现有的提示
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    // 添加新的提示
+    const container = document.querySelector('.container-fluid');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // 3秒后自动隐藏
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

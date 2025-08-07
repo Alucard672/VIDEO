@@ -1,0 +1,1188 @@
+{% extends "base.html" %}
+
+{% block title %}视频管理 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-video"></i>
+        视频管理
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshVideoList()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-sm btn-success" onclick="showUploadModal()">
+                <i class="fas fa-upload"></i> 上传视频
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="showBatchOperationModal()">
+                <i class="fas fa-tasks"></i> 批量操作
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            总视频数
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalVideos">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-video fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            已发布
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="publishedVideos">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            处理中
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="processingVideos">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-spinner fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            存储空间
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="storageUsed">0 GB</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-hdd fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选和搜索 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">状态筛选</label>
+                <select class="form-select" id="statusFilter" onchange="filterVideos()">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="processing">处理中</option>
+                    <option value="completed">已完成</option>
+                    <option value="published">已发布</option>
+                    <option value="failed">失败</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="platformFilter" class="form-label">平台筛选</label>
+                <select class="form-select" id="platformFilter" onchange="filterVideos()">
+                    <option value="">全部平台</option>
+                    <option value="douyin">抖音</option>
+                    <option value="xiaohongshu">小红书</option>
+                    <option value="bilibili">哔哩哔哩</option>
+                    <option value="kuaishou">快手</option>
+                    <option value="youtube">YouTube</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="dateFilter" class="form-label">日期筛选</label>
+                <select class="form-select" id="dateFilter" onchange="filterVideos()">
+                    <option value="">全部时间</option>
+                    <option value="today">今天</option>
+                    <option value="week">本周</option>
+                    <option value="month">本月</option>
+                    <option value="custom">自定义</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="searchInput" class="form-label">搜索</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="搜索标题、标签..." onkeyup="searchVideos()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchVideos()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 自定义日期范围 -->
+        <div class="row mt-3" id="customDateRange" style="display: none;">
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">开始日期</label>
+                <input type="date" class="form-control" id="startDate" onchange="filterVideos()">
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">结束日期</label>
+                <input type="date" class="form-control" id="endDate" onchange="filterVideos()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 视频列表 -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list"></i>
+                视频列表
+            </h5>
+            <div class="btn-group btn-group-sm" role="group">
+                <input type="radio" class="btn-check" name="viewMode" id="gridView" checked>
+                <label class="btn btn-outline-secondary" for="gridView">
+                    <i class="fas fa-th"></i> 网格
+                </label>
+                <input type="radio" class="btn-check" name="viewMode" id="listView">
+                <label class="btn btn-outline-secondary" for="listView">
+                    <i class="fas fa-list"></i> 列表
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- 网格视图 -->
+        <div id="gridViewContainer" class="row">
+            <!-- 视频卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 列表视图 -->
+        <div id="listViewContainer" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>缩略图</th>
+                            <th>标题</th>
+                            <th>状态</th>
+                            <th>平台</th>
+                            <th>时长</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="videoTableBody">
+                        <!-- 表格行将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 分页 -->
+        <nav aria-label="视频列表分页" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- 分页按钮将通过JavaScript动态生成 -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- 上传视频模态框 -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">上传视频</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="videoFile" class="form-label">选择视频文件</label>
+                        <input type="file" class="form-control" id="videoFile" accept="video/*" required>
+                        <div class="form-text">支持格式：MP4, AVI, MOV, MKV，最大文件大小：2GB</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="videoTitle" class="form-label">视频标题</label>
+                        <input type="text" class="form-control" id="videoTitle" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="videoDescription" class="form-label">视频描述</label>
+                        <textarea class="form-control" id="videoDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="videoTags" class="form-label">标签</label>
+                        <input type="text" class="form-control" id="videoTags" placeholder="用逗号分隔多个标签">
+                        <div class="form-text">例如：搞笑,娱乐,生活</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="targetPlatforms" class="form-label">目标平台</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="platform_douyin" value="douyin">
+                                    <label class="form-check-label" for="platform_douyin">抖音</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="platform_xiaohongshu" value="xiaohongshu">
+                                    <label class="form-check-label" for="platform_xiaohongshu">小红书</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="platform_bilibili" value="bilibili">
+                                    <label class="form-check-label" for="platform_bilibili">哔哩哔哩</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="platform_kuaishou" value="kuaishou">
+                                    <label class="form-check-label" for="platform_kuaishou">快手</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="platform_youtube" value="youtube">
+                                    <label class="form-check-label" for="platform_youtube">YouTube</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="autoProcess" checked>
+                            <label class="form-check-label" for="autoProcess">
+                                上传后自动开始处理
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 上传进度 -->
+                    <div class="mb-3" id="uploadProgress" style="display: none;">
+                        <label class="form-label">上传进度</label>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="uploadStatus">准备上传...</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="uploadVideo()">
+                    <i class="fas fa-upload"></i> 开始上传
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 视频详情模态框 -->
+<div class="modal fade" id="videoDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">视频详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="video-preview">
+                            <video id="videoPlayer" controls style="width: 100%; max-height: 300px;">
+                                您的浏览器不支持视频播放。
+                            </video>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="video-info">
+                            <h6>基本信息</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>标题：</strong></td>
+                                    <td id="detailTitle">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>状态：</strong></td>
+                                    <td id="detailStatus">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>时长：</strong></td>
+                                    <td id="detailDuration">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>文件大小：</strong></td>
+                                    <td id="detailFileSize">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>分辨率：</strong></td>
+                                    <td id="detailResolution">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>创建时间：</strong></td>
+                                    <td id="detailCreatedAt">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>描述</h6>
+                        <p id="detailDescription" class="text-muted">暂无描述</p>
+                        
+                        <h6>标签</h6>
+                        <div id="detailTags">
+                            <!-- 标签将通过JavaScript动态生成 -->
+                        </div>
+                        
+                        <h6 class="mt-3">发布平台</h6>
+                        <div id="detailPlatforms">
+                            <!-- 平台状态将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 处理日志 -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>处理日志</h6>
+                        <div class="log-container" id="detailLogs" style="height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                            <!-- 日志将通过JavaScript动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-warning" onclick="reprocessVideo()">
+                    <i class="fas fa-redo"></i> 重新处理
+                </button>
+                <button type="button" class="btn btn-success" onclick="publishVideo()">
+                    <i class="fas fa-share"></i> 发布
+                </button>
+                <button type="button" class="btn btn-danger" onclick="deleteVideo()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量操作模态框 -->
+<div class="modal fade" id="batchOperationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量操作</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>已选择 <span id="selectedCount">0</span> 个视频</p>
+                
+                <div class="mb-3">
+                    <label for="batchOperation" class="form-label">选择操作</label>
+                    <select class="form-select" id="batchOperation">
+                        <option value="">请选择操作</option>
+                        <option value="publish">批量发布</option>
+                        <option value="reprocess">批量重新处理</option>
+                        <option value="delete">批量删除</option>
+                        <option value="updateTags">批量更新标签</option>
+                        <option value="changePlatform">批量更改平台</option>
+                    </select>
+                </div>
+                
+                <!-- 批量更新标签 -->
+                <div class="mb-3" id="batchTagsContainer" style="display: none;">
+                    <label for="batchTags" class="form-label">新标签</label>
+                    <input type="text" class="form-control" id="batchTags" placeholder="用逗号分隔多个标签">
+                </div>
+                
+                <!-- 批量更改平台 -->
+                <div class="mb-3" id="batchPlatformContainer" style="display: none;">
+                    <label class="form-label">目标平台</label>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batch_platform_douyin" value="douyin">
+                                <label class="form-check-label" for="batch_platform_douyin">抖音</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batch_platform_xiaohongshu" value="xiaohongshu">
+                                <label class="form-check-label" for="batch_platform_xiaohongshu">小红书</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batch_platform_bilibili" value="bilibili">
+                                <label class="form-check-label" for="batch_platform_bilibili">哔哩哔哩</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="batch_platform_kuaishou" value="kuaishou">
+                                <label class="form-check-label" for="batch_platform_kuaishou">快手</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="executeBatchOperation()">
+                    <i class="fas fa-check"></i> 执行操作
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let selectedVideos = new Set();
+let allVideos = [];
+let filteredVideos = [];
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadVideoList();
+    loadStatistics();
+    
+    // 视图模式切换
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleViewMode(this.id === 'gridView');
+        });
+    });
+    
+    // 日期筛选变化
+    document.getElementById('dateFilter').addEventListener('change', function() {
+        const customDateRange = document.getElementById('customDateRange');
+        if (this.value === 'custom') {
+            customDateRange.style.display = 'block';
+        } else {
+            customDateRange.style.display = 'none';
+        }
+    });
+    
+    // 批量操作选择变化
+    document.getElementById('batchOperation').addEventListener('change', function() {
+        const value = this.value;
+        document.getElementById('batchTagsContainer').style.display = value === 'updateTags' ? 'block' : 'none';
+        document.getElementById('batchPlatformContainer').style.display = value === 'changePlatform' ? 'block' : 'none';
+    });
+});
+
+// 加载视频列表
+function loadVideoList() {
+    apiRequest('/api/videos')
+        .then(data => {
+            allVideos = data.videos || [];
+            filteredVideos = [...allVideos];
+            totalPages = Math.ceil(filteredVideos.length / 12);
+            renderVideoList();
+            renderPagination();
+        })
+        .catch(error => {
+            console.error('加载视频列表失败:', error);
+            showNotification('加载视频列表失败: ' + error.message, 'error');
+        });
+}
+
+// 加载统计数据
+function loadStatistics() {
+    apiRequest('/api/videos/statistics')
+        .then(data => {
+            document.getElementById('totalVideos').textContent = data.total || 0;
+            document.getElementById('publishedVideos').textContent = data.published || 0;
+            document.getElementById('processingVideos').textContent = data.processing || 0;
+            document.getElementById('storageUsed').textContent = (data.storage_used || 0) + ' GB';
+        })
+        .catch(error => {
+            console.error('加载统计数据失败:', error);
+        });
+}
+
+// 渲染视频列表
+function renderVideoList() {
+    const isGridView = document.getElementById('gridView').checked;
+    
+    if (isGridView) {
+        renderGridView();
+    } else {
+        renderListView();
+    }
+}
+
+// 渲染网格视图
+function renderGridView() {
+    const container = document.getElementById('gridViewContainer');
+    const startIndex = (currentPage - 1) * 12;
+    const endIndex = Math.min(startIndex + 12, filteredVideos.length);
+    const pageVideos = filteredVideos.slice(startIndex, endIndex);
+    
+    container.innerHTML = '';
+    
+    pageVideos.forEach(video => {
+        const col = document.createElement('div');
+        col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+        
+        col.innerHTML = `
+            <div class="card video-card h-100">
+                <div class="position-relative">
+                    <img src="${video.thumbnail || '/static/images/default-thumbnail.jpg'}" 
+                         class="card-img-top" alt="视频缩略图" style="height: 180px; object-fit: cover;">
+                    <div class="position-absolute top-0 start-0 p-2">
+                        <input type="checkbox" class="form-check-input video-checkbox" 
+                               value="${video.id}" onchange="toggleVideoSelection(${video.id})">
+                    </div>
+                    <div class="position-absolute bottom-0 end-0 p-2">
+                        <span class="badge bg-dark">${formatDuration(video.duration)}</span>
+                    </div>
+                    <div class="position-absolute top-0 end-0 p-2">
+                        ${getStatusBadge(video.status)}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-title text-truncate" title="${video.title}">${video.title}</h6>
+                    <p class="card-text text-muted small">
+                        <i class="fas fa-calendar"></i> ${formatDate(video.created_at)}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="platform-badges">
+                            ${getPlatformBadges(video.platforms)}
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary btn-sm" onclick="showVideoDetail(${video.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="publishVideo(${video.id})">
+                                <i class="fas fa-share"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(col);
+    });
+}
+
+// 渲染列表视图
+function renderListView() {
+    const tbody = document.getElementById('videoTableBody');
+    const startIndex = (currentPage - 1) * 12;
+    const endIndex = Math.min(startIndex + 12, filteredVideos.length);
+    const pageVideos = filteredVideos.slice(startIndex, endIndex);
+    
+    tbody.innerHTML = '';
+    
+    pageVideos.forEach(video => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input video-checkbox" 
+                       value="${video.id}" onchange="toggleVideoSelection(${video.id})">
+            </td>
+            <td>
+                <img src="${video.thumbnail || '/static/images/default-thumbnail.jpg'}" 
+                     alt="缩略图" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;">
+            </td>
+            <td>
+                <div class="text-truncate" style="max-width: 200px;" title="${video.title}">
+                    ${video.title}
+                </div>
+            </td>
+            <td>${getStatusBadge(video.status)}</td>
+            <td>${getPlatformBadges(video.platforms)}</td>
+            <td>${formatDuration(video.duration)}</td>
+            <td>${formatDate(video.created_at)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showVideoDetail(${video.id})" title="查看详情">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm" onclick="publishVideo(${video.id})" title="发布">
+                        <i class="fas fa-share"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteVideo(${video.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// 切换视图模式
+function toggleViewMode(isGridView) {
+    const gridContainer = document.getElementById('gridViewContainer');
+    const listContainer = document.getElementById('listViewContainer');
+    
+    if (isGridView) {
+        gridContainer.style.display = 'block';
+        listContainer.style.display = 'none';
+    } else {
+        gridContainer.style.display = 'none';
+        listContainer.style.display = 'block';
+    }
+    
+    renderVideoList();
+}
+
+// 渲染分页
+function renderPagination() {
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // 上一页
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>`;
+    pagination.appendChild(prevLi);
+    
+    // 页码
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        pagination.appendChild(li);
+    }
+    
+    // 下一页
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>`;
+    pagination.appendChild(nextLi);
+}
+
+// 切换页面
+function changePage(page) {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    currentPage = page;
+    renderVideoList();
+    renderPagination();
+}
+
+// 获取状态徽章
+function getStatusBadge(status) {
+    const statusMap = {
+        'pending': '<span class="badge bg-secondary">待处理</span>',
+        'processing': '<span class="badge bg-primary">处理中</span>',
+        'completed': '<span class="badge bg-success">已完成</span>',
+        'published': '<span class="badge bg-info">已发布</span>',
+        'failed': '<span class="badge bg-danger">失败</span>'
+    };
+    return statusMap[status] || '<span class="badge bg-secondary">未知</span>';
+}
+
+// 获取平台徽章
+function getPlatformBadges(platforms) {
+    if (!platforms || platforms.length === 0) return '';
+    
+    const platformMap = {
+        'douyin': '<span class="badge bg-dark me-1">抖音</span>',
+        'xiaohongshu': '<span class="badge bg-danger me-1">小红书</span>',
+        'bilibili': '<span class="badge bg-primary me-1">B站</span>',
+        'kuaishou': '<span class="badge bg-warning me-1">快手</span>',
+        'youtube': '<span class="badge bg-danger me-1">YouTube</span>'
+    };
+    
+    return platforms.map(platform => platformMap[platform] || '').join('');
+}
+
+// 格式化时长
+function formatDuration(seconds) {
+    if (!seconds) return '00:00';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+// 格式化日期
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+}
+
+// 筛选视频
+function filterVideos() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const platformFilter = document.getElementById('platformFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    filteredVideos = allVideos.filter(video => {
+        // 状态筛选
+        if (statusFilter && video.status !== statusFilter) return false;
+        
+        // 平台筛选
+        if (platformFilter && (!video.platforms || !video.platforms.includes(platformFilter))) return false;
+        
+        // 日期筛选
+        if (dateFilter) {
+            const videoDate = new Date(video.created_at);
+            const now = new Date();
+            
+            switch (dateFilter) {
+                case 'today':
+                    if (videoDate.toDateString() !== now.toDateString()) return false;
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    if (videoDate < weekAgo) return false;
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                    if (videoDate < monthAgo) return false;
+                    break;
+                case 'custom':
+                    if (startDate && videoDate < new Date(startDate)) return false;
+                    if (endDate && videoDate > new Date(endDate + ' 23:59:59')) return false;
+                    break;
+            }
+        }
+        
+        return true;
+    });
+    
+    currentPage = 1;
+    totalPages = Math.ceil(filteredVideos.length / 12);
+    renderVideoList();
+    renderPagination();
+}
+
+// 搜索视频
+function searchVideos() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        filteredVideos = [...allVideos];
+    } else {
+        filteredVideos = allVideos.filter(video => {
+            return video.title.toLowerCase().includes(searchTerm) ||
+                   (video.tags && video.tags.some(tag => tag.toLowerCase().includes(searchTerm)));
+        });
+    }
+    
+    currentPage = 1;
+    totalPages = Math.ceil(filteredVideos.length / 12);
+    renderVideoList();
+    renderPagination();
+}
+
+// 刷新视频列表
+function refreshVideoList() {
+    loadVideoList();
+    loadStatistics();
+    showNotification('视频列表已刷新', 'success');
+}
+
+// 显示上传模态框
+function showUploadModal() {
+    const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    modal.show();
+}
+
+// 上传视频
+function uploadVideo() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData();
+    
+    // 获取表单数据
+    const videoFile = document.getElementById('videoFile').files[0];
+    const title = document.getElementById('videoTitle').value;
+    const description = document.getElementById('videoDescription').value;
+    const tags = document.getElementById('videoTags').value;
+    const autoProcess = document.getElementById('autoProcess').checked;
+    
+    // 获取选中的平台
+    const platforms = [];
+    document.querySelectorAll('input[id^="platform_"]:checked').forEach(checkbox => {
+        platforms.push(checkbox.value);
+    });
+    
+    if (!videoFile || !title || platforms.length === 0) {
+        showNotification('请填写必要信息并选择至少一个平台', 'error');
+        return;
+    }
+    
+    // 构建表单数据
+    formData.append('video', videoFile);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('tags', tags);
+    formData.append('platforms', JSON.stringify(platforms));
+    formData.append('auto_process', autoProcess);
+    
+    // 显示上传进度
+    const progressContainer = document.getElementById('uploadProgress');
+    const progressBar = progressContainer.querySelector('.progress-bar');
+    const statusText = document.getElementById('uploadStatus');
+    
+    progressContainer.style.display = 'block';
+    statusText.textContent = '开始上传...';
+    
+    // 发送上传请求
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            statusText.textContent = `上传中... ${Math.round(percentComplete)}%`;
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            showNotification('视频上传成功', 'success');
+            
+            // 关闭模态框并刷新列表
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+            modal.hide();
+            form.reset();
+            progressContainer.style.display = 'none';
+            loadVideoList();
+            loadStatistics();
+        } else {
+            showNotification('上传失败: ' + xhr.responseText, 'error');
+        }
+    });
+    
+    xhr.addEventListener('error', function() {
+        showNotification('上传失败，请检查网络连接', 'error');
+    });
+    
+    xhr.open('POST', '/api/videos/upload');
+    xhr.send(formData);
+}
+
+// 显示视频详情
+function showVideoDetail(videoId) {
+    apiRequest(`/api/videos/${videoId}`)
+        .then(video => {
+            // 填充基本信息
+            document.getElementById('detailTitle').textContent = video.title;
+            document.getElementById('detailStatus').innerHTML = getStatusBadge(video.status);
+            document.getElementById('detailDuration').textContent = formatDuration(video.duration);
+            document.getElementById('detailFileSize').textContent = formatFileSize(video.file_size);
+            document.getElementById('detailResolution').textContent = video.resolution || '-';
+            document.getElementById('detailCreatedAt').textContent = formatDate(video.created_at);
+            document.getElementById('detailDescription').textContent = video.description || '暂无描述';
+            
+            // 设置视频播放器
+            const videoPlayer = document.getElementById('videoPlayer');
+            if (video.file_url) {
+                videoPlayer.src = video.file_url;
+            }
+            
+            // 显示标签
+            const tagsContainer = document.getElementById('detailTags');
+            tagsContainer.innerHTML = '';
+            if (video.tags && video.tags.length > 0) {
+                video.tags.forEach(tag => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-secondary me-1';
+                    badge.textContent = tag;
+                    tagsContainer.appendChild(badge);
+                });
+            } else {
+                tagsContainer.innerHTML = '<span class="text-muted">暂无标签</span>';
+            }
+            
+            // 显示平台状态
+            const platformsContainer = document.getElementById('detailPlatforms');
+            platformsContainer.innerHTML = '';
+            if (video.platform_status) {
+                Object.entries(video.platform_status).forEach(([platform, status]) => {
+                    const div = document.createElement('div');
+                    div.className = 'mb-2';
+                    div.innerHTML = `
+                        <span class="badge bg-primary me-2">${getPlatformName(platform)}</span>
+                        ${getStatusBadge(status)}
+                    `;
+                    platformsContainer.appendChild(div);
+                });
+            }
+            
+            // 显示处理日志
+            const logsContainer = document.getElementById('detailLogs');
+            logsContainer.innerHTML = '';
+            if (video.logs && video.logs.length > 0) {
+                video.logs.forEach(log => {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'mb-1';
+                    logEntry.innerHTML = `
+                        <small class="text-muted">[${formatDate(log.timestamp)}]</small>
+                        <span class="${getLogLevelClass(log.level)}">${log.message}</span>
+                    `;
+                    logsContainer.appendChild(logEntry);
+                });
+            } else {
+                logsContainer.innerHTML = '<div class="text-muted">暂无日志</div>';
+            }
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('videoDetailModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showNotification('加载视频详情失败: ' + error.message, 'error');
+        });
+}
+
+// 发布视频
+function publishVideo(videoId) {
+    confirmAction('确定要发布这个视频吗？', () => {
+        apiRequest(`/api/videos/${videoId}/publish`, {
+            method: 'POST'
+        })
+        .then(data => {
+            showNotification('视频发布任务已启动', 'success');
+            loadVideoList();
+        })
+        .catch(error => {
+            showNotification('发布失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 重新处理视频
+function reprocessVideo(videoId) {
+    confirmAction('确定要重新处理这个视频吗？', () => {
+        apiRequest(`/api/videos/${videoId}/reprocess`, {
+            method: 'POST'
+        })
+        .then(data => {
+            showNotification('视频重新处理任务已启动', 'success');
+            loadVideoList();
+        })
+        .catch(error => {
+            showNotification('重新处理失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 删除视频
+function deleteVideo(videoId) {
+    confirmAction('确定要删除这个视频吗？此操作不可撤销。', () => {
+        apiRequest(`/api/videos/${videoId}`, {
+            method: 'DELETE'
+        })
+        .then(data => {
+            showNotification('视频已删除', 'success');
+            loadVideoList();
+            loadStatistics();
+        })
+        .catch(error => {
+            showNotification('删除失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 切换视频选择
+function toggleVideoSelection(videoId) {
+    if (selectedVideos.has(videoId)) {
+        selectedVideos.delete(videoId);
+    } else {
+        selectedVideos.add(videoId);
+    }
+    
+    updateSelectedCount();
+    updateSelectAllCheckbox();
+}
+
+// 全选/取消全选
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const videoCheckboxes = document.querySelectorAll('.video-checkbox');
+    
+    if (selectAllCheckbox.checked) {
+        videoCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            selectedVideos.add(parseInt(checkbox.value));
+        });
+    } else {
+        videoCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            selectedVideos.delete(parseInt(checkbox.value));
+        });
+    }
+    
+    updateSelectedCount();
+}
+
+// 更新选中数量
+function updateSelectedCount() {
+    document.getElementById('selectedCount').textContent = selectedVideos.size;
+}
+
+// 更新全选复选框状态
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const videoCheckboxes = document.querySelectorAll('.video-checkbox');
+    const checkedCount = document.querySelectorAll('.video-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCount === videoCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// 显示批量操作模态框
+function showBatchOperationModal() {
+    if (selectedVideos.size === 0) {
+        showNotification('请先选择要操作的视频', 'warning');
+        return;
+    }
+    
+    updateSelectedCount();
+    const modal = new bootstrap.Modal(document.getElementById('batchOperationModal'));
+    modal.show();
+}
+
+// 执行批量操作
+function executeBatchOperation() {
+    const operation = document.getElementById('batchOperation').value;
+    
+    if (!operation) {
+        showNotification('请选择要执行的操作', 'warning');
+        return;
+    }
+    
+    const videoIds = Array.from(selectedVideos);
+    let requestData = { video_ids: videoIds };
+    
+    // 根据操作类型添加额外数据
+    if (operation === 'updateTags') {
+        const tags = document.getElementById('batchTags').value;
+        if (!tags) {
+            showNotification('请输入新标签', 'warning');
+            return;
+        }
+        requestData.tags = tags.split(',').map(tag => tag.trim());
+    } else if (operation === 'changePlatform') {
+        const platforms = [];
+        document.querySelectorAll('input[id^="batch_platform_"]:checked').forEach(checkbox => {
+            platforms.push(checkbox.value);
+        });
+        if (platforms.length === 0) {
+            showNotification('请选择至少一个平台', 'warning');
+            return;
+        }
+        requestData.platforms = platforms;
+    }
+    
+    // 发送批量操作请求
+    apiRequest(`/api/videos/batch/${operation}`, {
+        method: 'POST',
+        body: requestData
+    })
+    .then(data => {
+        showNotification(`批量${getOperationName(operation)}操作已启动`, 'success');
+        
+        // 关闭模态框并刷新列表
+        const modal = bootstrap.Modal.getInstance(document.getElementById('batchOperationModal'));
+        modal.hide();
+        selectedVideos.clear();
+        loadVideoList();
+        loadStatistics();
+    })
+    .catch(error => {
+        showNotification(`批量操作失败: ${error.message}`, 'error');
+    });
+}
+
+// 辅助函数
+function formatFileSize(bytes) {
+    if (!bytes) return '-';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function getPlatformName(platform) {
+    const platformNames = {
+        'douyin': '抖音',
+        'xiaohongshu': '小红书',
+        'bilibili': '哔哩哔哩',
+        'kuaishou': '快手',
+        'youtube': 'YouTube'
+    };
+    return platformNames[platform] || platform;
+}
+
+function getLogLevelClass(level) {
+    const levelClasses = {
+        'ERROR': 'text-danger',
+        'WARNING': 'text-warning',
+        'INFO': 'text-info',
+        'DEBUG': 'text-muted'
+    };
+    return levelClasses[level] || 'text-dark';
+}
+
+function getOperationName(operation) {
+    const operationNames = {
+        'publish': '发布',
+        'reprocess': '重新处理',
+        'delete': '删除',
+        'updateTags': '更新标签',
+        'changePlatform': '更改平台'
+    };
+    return operationNames[operation] || operation;
+}
+</script>
+{% endblock %}

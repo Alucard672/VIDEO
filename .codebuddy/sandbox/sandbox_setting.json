@@ -1,0 +1,20 @@
+{
+  "path": "/Users/alucard/video/video-auto-pipeline",
+  "desc": "这是一个视频搬运矩阵自动化系统，支持多平台视频处理、AI集成、内容管理、任务调度等功能。主要特性包括：多平台支持（抖音、小红书、哔哩哔哩、快手、YouTube）、AI服务集成（OpenAI GPT、Fliki、HeyGen）、视频自动化处理、智能内容生成、定时发布和数据分析等。",
+  "id": "a468a43cf6f441c996246ad2ac029d3b",
+  "data": {
+    "spaceKey": "a468a43cf6f441c996246ad2ac029d3b",
+    "connections": {
+      "webIDE": "https://a468a43cf6f441c996246ad2ac029d3b.ap-singapore.cloudstudio.club",
+      "preview": "https://a468a43cf6f441c996246ad2ac029d3b--{port}.ap-singapore.cloudstudio.club",
+      "api": "https://a468a43cf6f441c996246ad2ac029d3b--api.ap-singapore.cloudstudio.club",
+      "pty": "https://a468a43cf6f441c996246ad2ac029d3b--pty.ap-singapore.cloudstudio.club"
+    }
+  },
+  "config": {
+    "api": "https://a468a43cf6f441c996246ad2ac029d3b--api.ap-singapore.cloudstudio.club",
+    "pty": "https://a468a43cf6f441c996246ad2ac029d3b--pty.ap-singapore.cloudstudio.club",
+    "region": "ap-shanghai",
+    "spaceKey": "a468a43cf6f441c996246ad2ac029d3b"
+  }
+}

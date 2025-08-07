@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}用户列表{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i>
+                        用户列表
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- 统计概览 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-users"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总用户数</span>
+                                    <span class="info-box-number">
+                                        {{ users.stats.total_users if users.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-user-check"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">在线用户</span>
+                                    <span class="info-box-number">
+                                        {{ users.stats.online_users if users.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-user-shield"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">活跃用户</span>
+                                    <span class="info-box-number">
+                                        {{ users.stats.active_users if users.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-user-plus"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">今日新增</span>
+                                    <span class="info-box-number">
+                                        {{ users.stats.new_users_today if users.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>最后登录</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if users.users %}
+                                    {% for user in users.users %}
+                                    <tr>
+                                        <td>{{ user.id or user.user_id or 'N/A' }}</td>
+                                        <td>{{ user.username or 'N/A' }}</td>
+                                        <td>{{ user.email or 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ 'danger' if user.role == 'admin' else 'primary' }}">
+                                                {{ user.role or 'user' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ 'success' if user.status == 'active' else 'secondary' }}">
+                                                {{ user.status or 'active' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ user.created_at or 'N/A' }}</td>
+                                        <td>{{ user.last_login or '从未登录' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center">暂无用户数据</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 初始化DataTable（如果可用）
+$(document).ready(function() {
+    if ($.fn.DataTable) {
+        $('#usersTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese.json"
+            },
+            "pageLength": 25,
+            "order": [[ 0, "desc" ]]
+        });
+    }
+});
+
+// 定时刷新用户数据
+function refreshUsers() {
+    fetch('/api/users')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 可以在这里更新页面数据
+            console.log('用户数据已刷新');
+        }
+    })
+    .catch(error => {
+        console.error('刷新用户数据失败:', error);
+    });
+}
+
+// 每30秒刷新一次数据
+setInterval(refreshUsers, 30000);
+</script>
+{% endblock %}

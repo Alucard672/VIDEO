@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}系统日志{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt"></i>
+                        系统日志
+                    </h3>
+                    <div class="card-tools">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="refreshLogs()">
+                                <i class="fas fa-sync"></i> 刷新
+                            </button>
+                            <button type="button" class="btn btn-success btn-sm" onclick="downloadLogs()">
+                                <i class="fas fa-download"></i> 下载
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="clearLogs()">
+                                <i class="fas fa-trash"></i> 清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 统计概览 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-list"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总日志数</span>
+                                    <span class="info-box-number" id="total-logs">
+                                        {{ logs.stats.total_logs if logs.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">错误数</span>
+                                    <span class="info-box-number" id="error-count">
+                                        {{ logs.stats.error_count if logs.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-exclamation"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">警告数</span>
+                                    <span class="info-box-number" id="warning-count">
+                                        {{ logs.stats.warning_count if logs.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-info"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">信息数</span>
+                                    <span class="info-box-number" id="info-count">
+                                        {{ logs.stats.info_count if logs.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 过滤器 -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-control" id="levelFilter" onchange="filterLogs()">
+                                <option value="all">所有级别</option>
+                                <option value="error">错误</option>
+                                <option value="warning">警告</option>
+                                <option value="info">信息</option>
+                                <option value="debug">调试</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" id="searchInput" placeholder="搜索日志..." onkeyup="filterLogs()">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-control" id="limitSelect" onchange="filterLogs()">
+                                <option value="50">显示50条</option>
+                                <option value="100" selected>显示100条</option>
+                                <option value="200">显示200条</option>
+                                <option value="500">显示500条</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                                <label class="form-check-label" for="autoRefresh">
+                                    自动刷新
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 日志文件列表 -->
+                    {% if logs.files %}
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            日志文件: 
+                            {% for file in logs.files %}
+                                <span class="badge badge-secondary">{{ file }}</span>
+                            {% endfor %}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- 日志列表 -->
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-sm table-striped" id="logsTable">
+                            <thead class="thead-dark sticky-top">
+                                <tr>
+                                    <th style="width: 150px;">时间</th>
+                                    <th style="width: 80px;">级别</th>
+                                    <th style="width: 120px;">模块</th>
+                                    <th>消息</th>
+                                    <th style="width: 100px;">文件</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody">
+                                {% if logs.logs %}
+                                    {% for log in logs.logs %}
+                                    <tr class="log-row log-{{ log.level.lower() }}">
+                                        <td class="text-nowrap">
+                                            <small>{{ log.timestamp[:19] if log.timestamp else 'N/A' }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ 'danger' if log.level.upper() == 'ERROR' else 'warning' if log.level.upper() == 'WARNING' else 'info' if log.level.upper() == 'INFO' else 'secondary' }}">
+                                                {{ log.level }}
+                                            </span>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            <small>{{ log.module }}</small>
+                                        </td>
+                                        <td>
+                                            <small>{{ log.message }}</small>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            <small class="text-muted">{{ log.file }}</small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">暂无日志数据</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.log-error {
+    background-color: #f8d7da !important;
+}
+.log-warning {
+    background-color: #fff3cd !important;
+}
+.log-info {
+    background-color: #d1ecf1 !important;
+}
+.log-debug {
+    background-color: #e2e3e5 !important;
+}
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+</style>
+
+<script>
+let autoRefreshInterval = null;
+
+// 刷新日志
+function refreshLogs() {
+    const level = document.getElementById('levelFilter').value;
+    const search = document.getElementById('searchInput').value;
+    const limit = document.getElementById('limitSelect').value;
+    
+    const params = new URLSearchParams({
+        level: level,
+        search: search,
+        limit: limit
+    });
+    
+    fetch(`/api/logs?${params}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateLogsTable(data.data);
+            updateStats(data.data.stats);
+        } else {
+            console.error('获取日志失败:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('刷新日志失败:', error);
+    });
+}
+
+// 更新日志表格
+function updateLogsTable(logsData) {
+    const tbody = document.getElementById('logsTableBody');
+    tbody.innerHTML = '';
+    
+    if (logsData.logs && logsData.logs.length > 0) {
+        logsData.logs.forEach(log => {
+            const row = document.createElement('tr');
+            row.className = `log-row log-${log.level.toLowerCase()}`;
+            
+            const levelBadgeClass = log.level.upper() === 'ERROR' ? 'danger' : 
+                                   log.level.upper() === 'WARNING' ? 'warning' : 
+                                   log.level.upper() === 'INFO' ? 'info' : 'secondary';
+            
+            row.innerHTML = `
+                <td class="text-nowrap">
+                    <small>${log.timestamp ? log.timestamp.substring(0, 19) : 'N/A'}</small>
+                </td>
+                <td>
+                    <span class="badge badge-${levelBadgeClass}">${log.level}</span>
+                </td>
+                <td class="text-nowrap">
+                    <small>${log.module}</small>
+                </td>
+                <td>
+                    <small>${log.message}</small>
+                </td>
+                <td class="text-nowrap">
+                    <small class="text-muted">${log.file}</small>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        });
+    } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">暂无日志数据</td></tr>';
+    }
+}
+
+// 更新统计信息
+function updateStats(stats) {
+    document.getElementById('total-logs').textContent = stats.total_logs || 0;
+    document.getElementById('error-count').textContent = stats.error_count || 0;
+    document.getElementById('warning-count').textContent = stats.warning_count || 0;
+    document.getElementById('info-count').textContent = stats.info_count || 0;
+}
+
+// 过滤日志
+function filterLogs() {
+    refreshLogs();
+}
+
+// 下载日志
+function downloadLogs() {
+    window.open('/api/logs/download', '_blank');
+}
+
+// 清空日志
+function clearLogs() {
+    if (confirm('确定要清空所有日志吗？此操作不可恢复！')) {
+        fetch('/api/logs/clear', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({type: 'all'})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('日志已清空！');
+                refreshLogs();
+            } else {
+                alert('清空失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('清空日志失败:', error);
+            alert('清空失败: ' + error.message);
+        });
+    }
+}
+
+// 切换自动刷新
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 5000); // 每5秒刷新
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+        }
+    }
+}
+
+// 页面加载完成后初始化
+$(document).ready(function() {
+    // 初始加载日志
+    refreshLogs();
+});
+</script>
+{% endblock %}

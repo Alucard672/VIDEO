@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+
+{% block title %}内容管理 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-file-alt"></i>
+        内容管理
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createContentModal">
+                <i class="fas fa-plus"></i> 创建内容
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshContent()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="importContent()">
+                <i class="fas fa-download"></i> 导入内容
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 内容统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.total or 0 }}</h4>
+                        <p class="card-text">总内容数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.published or 0 }}</h4>
+                        <p class="card-text">已发布</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.draft or 0 }}</h4>
+                        <p class="card-text">草稿</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-edit fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ stats.pending or 0 }}</h4>
+                        <p class="card-text">待审核</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容筛选和搜索 -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="contentTypeFilter" class="form-label">内容类型</label>
+                        <select class="form-select" id="contentTypeFilter" onchange="filterContent()">
+                            <option value="">全部类型</option>
+                            {% for category in categories %}
+                            <option value="{{ category.value }}">{{ category.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="form-label">状态</label>
+                        <select class="form-select" id="statusFilter" onchange="filterContent()">
+                            <option value="">全部状态</option>
+                            <option value="draft">草稿</option>
+                            <option value="published">已发布</option>
+                            <option value="pending">待审核</option>
+                            <option value="archived">已归档</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="dateFilter" class="form-label">创建时间</label>
+                        <select class="form-select" id="dateFilter" onchange="filterContent()">
+                            <option value="">全部时间</option>
+                            <option value="today">今天</option>
+                            <option value="week">本周</option>
+                            <option value="month">本月</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="contentSearch" class="form-label">搜索内容</label>
+                        <input type="text" class="form-control" id="contentSearch" placeholder="输入标题或关键词..." onkeyup="searchContent()">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容列表 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i>
+                    内容列表
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="contentTable">
+                        <thead>
+                            <tr>
+                                <th>标题</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>更新时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contentTableBody">
+                            {% for content in recent_content %}
+                            <tr data-content-id="{{ content.id }}">
+                                <td>
+                                    <strong>{{ content.title or '未命名内容' }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ content.content_type or '未分类' }}</span>
+                                </td>
+                                <td>
+                                    {% if content.status == 'published' %}
+                                    <span class="badge bg-success">已发布</span>
+                                    {% elif content.status == 'draft' %}
+                                    <span class="badge bg-warning">草稿</span>
+                                    {% elif content.status == 'pending' %}
+                                    <span class="badge bg-info">待审核</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ content.status or '未知' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ content.created_at or '未知' }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ content.updated_at or '未知' }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="viewContent('{{ content.id }}')"
+                                                data-bs-toggle="tooltip" title="查看详情">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                onclick="editContent('{{ content.id }}')"
+                                                data-bs-toggle="tooltip" title="编辑">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        {% if content.status == 'draft' %}
+                                        <button type="button" class="btn btn-outline-success" 
+                                                onclick="publishContent('{{ content.id }}')"
+                                                data-bs-toggle="tooltip" title="发布">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="deleteContent('{{ content.id }}')"
+                                                data-bs-toggle="tooltip" title="删除">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                <nav aria-label="内容分页">
+                    <ul class="pagination justify-content-center" id="contentPagination">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建内容模态框 -->
+<div class="modal fade" id="createContentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建新内容</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createContentForm">
+                    <div class="mb-3">
+                        <label for="contentTitle" class="form-label">标题 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="contentTitle" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contentType" class="form-label">内容类型</label>
+                                <select class="form-select" id="contentType">
+                                    {% for category in categories %}
+                                    <option value="{{ category.value }}">{{ category.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contentStatus" class="form-label">状态</label>
+                                <select class="form-select" id="contentStatus">
+                                    <option value="draft">草稿</option>
+                                    <option value="pending">待审核</option>
+                                    <option value="published">已发布</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contentDescription" class="form-label">内容描述</label>
+                        <textarea class="form-control" id="contentDescription" rows="4" placeholder="请输入内容描述..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="contentTags" class="form-label">标签</label>
+                        <input type="text" class="form-control" id="contentTags" placeholder="输入标签，用逗号分隔">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateContent()">
+                    <i class="fas fa-plus"></i> 创建内容
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容详情模态框 -->
+<div class="modal fade" id="contentDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">内容详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contentDetailsContent">
+                    <!-- 内容详情将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let pageSize = 20;
+let allContent = [];
+let filteredContent = [];
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadContent();
+    
+    // 初始化工具提示
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// 加载内容列表
+function loadContent() {
+    apiRequest('/api/content')
+        .then(data => {
+            allContent = data.content || [];
+            filteredContent = [...allContent];
+            renderContent();
+            renderPagination();
+        })
+        .catch(error => {
+            showNotification('加载内容列表失败: ' + error.message, 'error');
+        });
+}
+
+// 渲染内容列表
+function renderContent() {
+    const tbody = document.getElementById('contentTableBody');
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const contentToShow = filteredContent.slice(startIndex, endIndex);
+    
+    tbody.innerHTML = '';
+    
+    contentToShow.forEach(content => {
+        const row = createContentRow(content);
+        tbody.appendChild(row);
+    });
+}
+
+// 创建内容行
+function createContentRow(content) {
+    const row = document.createElement('tr');
+    row.setAttribute('data-content-id', content.id);
+    
+    const statusBadges = {
+        'published': '<span class="badge bg-success">已发布</span>',
+        'draft': '<span class="badge bg-warning">草稿</span>',
+        'pending': '<span class="badge bg-info">待审核</span>',
+        'archived': '<span class="badge bg-secondary">已归档</span>'
+    };
+    
+    row.innerHTML = `
+        <td><strong>${content.title || '未命名内容'}</strong></td>
+        <td><span class="badge bg-secondary">${content.content_type || '未分类'}</span></td>
+        <td>${statusBadges[content.status] || '<span class="badge bg-secondary">未知</span>'}</td>
+        <td><small>${formatTime(content.created_at)}</small></td>
+        <td><small>${formatTime(content.updated_at)}</small></td>
+        <td>${createContentActionButtons(content)}</td>
+    `;
+    
+    return row;
+}
+
+// 创建操作按钮
+function createContentActionButtons(content) {
+    let buttons = `
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-info" 
+                    onclick="viewContent('${content.id}')"
+                    data-bs-toggle="tooltip" title="查看详情">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button type="button" class="btn btn-outline-primary" 
+                    onclick="editContent('${content.id}')"
+                    data-bs-toggle="tooltip" title="编辑">
+                <i class="fas fa-edit"></i>
+            </button>
+    `;
+    
+    if (content.status === 'draft') {
+        buttons += `
+            <button type="button" class="btn btn-outline-success" 
+                    onclick="publishContent('${content.id}')"
+                    data-bs-toggle="tooltip" title="发布">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        `;
+    }
+    
+    buttons += `
+            <button type="button" class="btn btn-outline-danger" 
+                    onclick="deleteContent('${content.id}')"
+                    data-bs-toggle="tooltip" title="删除">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    return buttons;
+}
+
+// 渲染分页
+function renderPagination() {
+    const totalPages = Math.ceil(filteredContent.length / pageSize);
+    const pagination = document.getElementById('contentPagination');
+    
+    pagination.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // 上一页
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>`;
+    pagination.appendChild(prevLi);
+    
+    // 页码
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        pagination.appendChild(li);
+    }
+    
+    // 下一页
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>`;
+    pagination.appendChild(nextLi);
+}
+
+// 切换页面
+function changePage(page) {
+    const totalPages = Math.ceil(filteredContent.length / pageSize);
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    renderContent();
+    renderPagination();
+}
+
+// 筛选内容
+function filterContent() {
+    const typeFilter = document.getElementById('contentTypeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const dateFilter = document.getElementById('dateFilter').value;
+    
+    filteredContent = allContent.filter(content => {
+        let matchType = !typeFilter || content.content_type === typeFilter;
+        let matchStatus = !statusFilter || content.status === statusFilter;
+        let matchDate = true;
+        
+        if (dateFilter) {
+            const contentDate = new Date(content.created_at);
+            const now = new Date();
+            
+            switch (dateFilter) {
+                case 'today':
+                    matchDate = contentDate.toDateString() === now.toDateString();
+                    break;
+                case 'week':
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    matchDate = contentDate >= weekAgo;
+                    break;
+                case 'month':
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    matchDate = contentDate >= monthAgo;
+                    break;
+            }
+        }
+        
+        return matchType && matchStatus && matchDate;
+    });
+    
+    currentPage = 1;
+    renderContent();
+    renderPagination();
+}
+
+// 搜索内容
+function searchContent() {
+    const searchTerm = document.getElementById('contentSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        filterContent();
+        return;
+    }
+    
+    filteredContent = allContent.filter(content => {
+        return content.title.toLowerCase().includes(searchTerm) ||
+               (content.description && content.description.toLowerCase().includes(searchTerm));
+    });
+    
+    currentPage = 1;
+    renderContent();
+    renderPagination();
+}
+
+// 刷新内容列表
+function refreshContent() {
+    loadContent();
+    showNotification('内容列表已刷新', 'success');
+}
+
+// 查看内容详情
+function viewContent(contentId) {
+    apiRequest(`/api/content/${contentId}`)
+        .then(content => {
+            document.getElementById('contentDetailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-12">
+                        <h5>${content.title}</h5>
+                        <p><strong>类型:</strong> ${content.content_type}</p>
+                        <p><strong>状态:</strong> ${content.status}</p>
+                        <p><strong>创建时间:</strong> ${content.created_at}</p>
+                        <p><strong>更新时间:</strong> ${content.updated_at}</p>
+                        <hr>
+                        <h6>内容描述:</h6>
+                        <p>${content.description || '暂无描述'}</p>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('contentDetailsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showNotification('获取内容详情失败: ' + error.message, 'error');
+        });
+}
+
+// 编辑内容
+function editContent(contentId) {
+    // 实现编辑功能
+    showNotification('编辑功能开发中...', 'info');
+}
+
+// 发布内容
+function publishContent(contentId) {
+    if (confirm('确定要发布这个内容吗？')) {
+        apiRequest(`/api/content/${contentId}/publish`, 'POST')
+            .then(result => {
+                showNotification('内容发布成功', 'success');
+                loadContent();
+            })
+            .catch(error => {
+                showNotification('发布失败: ' + error.message, 'error');
+            });
+    }
+}
+
+// 删除内容
+function deleteContent(contentId) {
+    if (confirm('确定要删除这个内容吗？此操作不可恢复。')) {
+        apiRequest(`/api/content/${contentId}`, 'DELETE')
+            .then(result => {
+                showNotification('内容删除成功', 'success');
+                loadContent();
+            })
+            .catch(error => {
+                showNotification('删除失败: ' + error.message, 'error');
+            });
+    }
+}
+
+// 提交创建内容
+function submitCreateContent() {
+    const formData = {
+        title: document.getElementById('contentTitle').value,
+        content_type: document.getElementById('contentType').value,
+        status: document.getElementById('contentStatus').value,
+        description: document.getElementById('contentDescription').value,
+        tags: document.getElementById('contentTags').value
+    };
+    
+    if (!formData.title) {
+        showNotification('请输入内容标题', 'warning');
+        return;
+    }
+    
+    apiRequest('/api/content', 'POST', formData)
+        .then(result => {
+            showNotification('内容创建成功', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createContentModal'));
+            modal.hide();
+            document.getElementById('createContentForm').reset();
+            loadContent();
+        })
+        .catch(error => {
+            showNotification('创建失败: ' + error.message, 'error');
+        });
+}
+
+// 导入内容
+function importContent() {
+    showNotification('导入功能开发中...', 'info');
+}
+</script>
+{% endblock %}

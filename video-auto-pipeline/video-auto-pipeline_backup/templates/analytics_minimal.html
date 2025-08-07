@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-chart-bar"></i>
+            数据分析
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> 刷新数据
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 总体统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总任务数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ task_stats.total }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">已完成任务</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ task_stats.completed }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">总文章数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ content_stats.get('total_articles', 0) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">成功率</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "%.1f"|format(task_stats.success_rate * 100) }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务状态分布 -->
+    <div class="row mb-4">
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">任务状态分布</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>已完成任务</span>
+                            <span>{{ task_stats.completed }} / {{ task_stats.total }}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" style="width: {{ (task_stats.completed / task_stats.total * 100) if task_stats.total > 0 else 0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>失败任务</span>
+                            <span>{{ task_stats.failed }} / {{ task_stats.total }}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-danger" style="width: {{ (task_stats.failed / task_stats.total * 100) if task_stats.total > 0 else 0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>其他状态</span>
+                            <span>{{ task_stats.total - task_stats.completed - task_stats.failed }} / {{ task_stats.total }}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" style="width: {{ ((task_stats.total - task_stats.completed - task_stats.failed) / task_stats.total * 100) if task_stats.total > 0 else 0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">内容分类统计</h6>
+                </div>
+                <div class="card-body">
+                    {% if category_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>分类</th>
+                                    <th>数量</th>
+                                    <th>占比</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in category_stats %}
+                                <tr>
+                                    <td>{{ category.category or '未分类' }}</td>
+                                    <td><span class="badge bg-primary">{{ category.count }}</span></td>
+                                    <td>
+                                        <div class="progress" style="height: 15px;">
+                                            <div class="progress-bar" style="width: {{ (category.count / content_stats.get('total_articles', 1) * 100)|round(1) }}%">
+                                                {{ (category.count / content_stats.get('total_articles', 1) * 100)|round(1) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                        <p class="text-muted">暂无分类数据</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 内容来源统计 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">内容来源统计</h6>
+                </div>
+                <div class="card-body">
+                    {% if source_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>来源</th>
+                                    <th>文章数量</th>
+                                    <th>占比</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for source in source_stats %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-globe mr-2"></i>
+                                        {{ source.source or '未知来源' }}
+                                    </td>
+                                    <td>{{ source.count }}</td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" style="width: {{ (source.count / content_stats.get('total_articles', 1) * 100)|round(1) }}%">
+                                                {{ (source.count / content_stats.get('total_articles', 1) * 100)|round(1) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if source.count > 0 %}
+                                            <span class="badge bg-success">活跃</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">无数据</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-gray-300 mb-3"></i>
+                        <p class="text-muted">暂无来源数据</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统概览 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">系统概览</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>任务统计</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>总任务数:</strong> {{ task_stats.total }} 个</li>
+                                <li><strong>已完成:</strong> {{ task_stats.completed }} 个</li>
+                                <li><strong>失败任务:</strong> {{ task_stats.failed }} 个</li>
+                                <li><strong>成功率:</strong> {{ "%.1f"|format(task_stats.success_rate * 100) }}%</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>内容统计</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>总文章数:</strong> {{ content_stats.get('total_articles', 0) }} 篇</li>
+                                <li><strong>已处理:</strong> {{ content_stats.get('processed_articles', 0) }} 篇</li>
+                                <li><strong>总字数:</strong> {{ "{:,}".format(content_stats.get('total_words', 0)) }} 字</li>
+                                <li><strong>分类数量:</strong> {{ category_stats|length }} 个</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 简单的页面初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Analytics page loaded successfully');
+});
+</script>
+{% endblock %}

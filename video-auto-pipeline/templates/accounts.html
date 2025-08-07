@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}账号管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-users"></i>
+                        账号管理
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addAccountModal">
+                            <i class="fas fa-plus"></i> 添加账号
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- 统计概览 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-users"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">总用户数</span>
+                                    <span class="info-box-number">
+                                        {{ accounts.stats.total_users if accounts.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-user-check"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">活跃用户</span>
+                                    <span class="info-box-number">
+                                        {{ accounts.stats.active_users if accounts.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning">
+                                    <i class="fas fa-user-shield"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">管理员</span>
+                                    <span class="info-box-number">
+                                        {{ accounts.stats.admin_users if accounts.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-danger">
+                                    <i class="fas fa-user-plus"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">今日新增</span>
+                                    <span class="info-box-number">
+                                        {{ accounts.stats.new_users_today if accounts.stats else 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 用户列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" id="accountsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>最后登录</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if accounts.users %}
+                                    {% for user in accounts.users %}
+                                    <tr>
+                                        <td>{{ user.id or user.user_id or 'N/A' }}</td>
+                                        <td>{{ user.username or 'N/A' }}</td>
+                                        <td>{{ user.email or 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge badge-{{ 'danger' if user.role == 'admin' else 'primary' }}">
+                                                {{ user.role or 'user' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ 'success' if user.status == 'active' else 'secondary' }}">
+                                                {{ user.status or 'active' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ user.created_at or 'N/A' }}</td>
+                                        <td>{{ user.last_login or '从未登录' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-info" onclick="viewAccount('{{ user.id or user.user_id }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-warning" onclick="editAccount('{{ user.id or user.user_id }}')">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-danger" onclick="deleteAccount('{{ user.id or user.user_id }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center">暂无用户数据</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加账号模态框 -->
+<div class="modal fade" id="addAccountModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加新账号</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="addAccountForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="username">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">角色</label>
+                        <select class="form-control" id="role" name="role">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">创建账号</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑账号模态框 -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑账号</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="editAccountForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editAccountId" name="accountId">
+                    <div class="form-group">
+                        <label for="editUsername">用户名</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">邮箱</label>
+                        <input type="email" class="form-control" id="editEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRole">角色</label>
+                        <select class="form-control" id="editRole" name="role">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editStatus">状态</label>
+                        <select class="form-control" id="editStatus" name="status">
+                            <option value="active">活跃</option>
+                            <option value="inactive">非活跃</option>
+                            <option value="suspended">已暂停</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// 添加账号
+document.getElementById('addAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    
+    fetch('/api/accounts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('账号创建成功！');
+            location.reload();
+        } else {
+            alert('创建失败: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('创建失败: ' + error.message);
+    });
+});
+
+// 编辑账号
+function editAccount(accountId) {
+    fetch(`/api/accounts/${accountId}`)
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            const account = result.data;
+            document.getElementById('editAccountId').value = accountId;
+            document.getElementById('editUsername').value = account.username || '';
+            document.getElementById('editEmail').value = account.email || '';
+            document.getElementById('editRole').value = account.role || 'user';
+            document.getElementById('editStatus').value = account.status || 'active';
+            $('#editAccountModal').modal('show');
+        } else {
+            alert('获取账号信息失败: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('获取账号信息失败: ' + error.message);
+    });
+}
+
+// 保存编辑
+document.getElementById('editAccountForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
+    const accountId = data.accountId;
+    delete data.accountId;
+    
+    fetch(`/api/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('账号更新成功！');
+            location.reload();
+        } else {
+            alert('更新失败: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('更新失败: ' + error.message);
+    });
+});
+
+// 查看账号
+function viewAccount(accountId) {
+    fetch(`/api/accounts/${accountId}`)
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            const account = result.data;
+            let info = `用户ID: ${account.id || account.user_id || 'N/A'}\n`;
+            info += `用户名: ${account.username || 'N/A'}\n`;
+            info += `邮箱: ${account.email || 'N/A'}\n`;
+            info += `角色: ${account.role || 'user'}\n`;
+            info += `状态: ${account.status || 'active'}\n`;
+            info += `创建时间: ${account.created_at || 'N/A'}\n`;
+            info += `最后登录: ${account.last_login || '从未登录'}`;
+            alert(info);
+        } else {
+            alert('获取账号信息失败: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('获取账号信息失败: ' + error.message);
+    });
+}
+
+// 删除账号
+function deleteAccount(accountId) {
+    if (confirm('确定要删除这个账号吗？此操作不可恢复！')) {
+        fetch(`/api/accounts/${accountId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('账号删除成功！');
+                location.reload();
+            } else {
+                alert('删除失败: ' + result.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('删除失败: ' + error.message);
+        });
+    }
+}
+
+// 初始化DataTable（如果可用）
+$(document).ready(function() {
+    if ($.fn.DataTable) {
+        $('#accountsTable').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese.json"
+            },
+            "pageLength": 25,
+            "order": [[ 0, "desc" ]]
+        });
+    }
+});
+</script>
+{% endblock %}

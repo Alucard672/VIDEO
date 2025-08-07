@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "name": "新闻",
+    "description": "新闻资讯"
+  },
+  {
+    "id": 2,
+    "name": "技术",
+    "description": "技术文章"
+  },
+  {
+    "id": 3,
+    "name": "社交",
+    "description": "社交媒体内容"
+  },
+  {
+    "id": 4,
+    "name": "娱乐",
+    "description": "娱乐资讯"
+  },
+  {
+    "id": 5,
+    "name": "测试",
+    "description": "测试内容"
+  }
+]

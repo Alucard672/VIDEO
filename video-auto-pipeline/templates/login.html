@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}用户登录{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-header text-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-sign-in-alt"></i>
+                        用户登录
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group mb-3">
+                            <label for="username" class="form-label">用户名</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                </div>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="请输入用户名" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="password" class="form-label">密码</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                </div>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="请输入密码" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe">
+                                <label class="form-check-label" for="rememberMe">
+                                    记住我
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i>
+                                登录
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            还没有账号？
+                            <a href="/register" class="text-decoration-none">立即注册</a>
+                        </small>
+                    </div>
+                    
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            <a href="/forgot-password" class="text-decoration-none">忘记密码？</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 演示账号信息 -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-info"></i>
+                        演示账号
+                    </h6>
+                    <small class="text-muted">
+                        用户名: admin<br>
+                        密码: admin123
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+}
+
+.form-control {
+    border-left: none;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.alert {
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .card {
+        margin: 10px 0;
+    }
+}
+</style>
+
+<script>
+// 切换密码显示/隐藏
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = document.getElementById('passwordToggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+    }
+}
+
+// 处理登录表单提交
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const loginData = {
+        username: formData.get('username'),
+        password: formData.get('password'),
+        rememberMe: formData.get('rememberMe') === 'on'
+    };
+    
+    // 显示加载状态
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+    submitBtn.disabled = true;
+    
+    // 发送登录请求
+    fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 登录成功
+            showAlert('登录成功！正在跳转...', 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect || '/';
+            }, 1000);
+        } else {
+            // 登录失败
+            showAlert(data.error || '登录失败，请检查用户名和密码', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('登录请求失败:', error);
+        showAlert('网络错误，请稍后重试', 'danger');
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// 显示提示信息
+function showAlert(message, type = 'info') {
+    // 移除现有的提示
+    const existingAlert = document.querySelector('.alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    // 创建新的提示
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // 插入到表单前面
+    const form = document.getElementById('loginForm');
+    form.parentNode.insertBefore(alertDiv, form);
+    
+    // 自动隐藏成功提示
+    if (type === 'success') {
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+}
+
+// 页面加载完成后的初始化
+$(document).ready(function() {
+    // 自动聚焦到用户名输入框
+    document.getElementById('username').focus();
+    
+    // 检查是否有记住的用户名
+    const rememberedUsername = localStorage.getItem('rememberedUsername');
+    if (rememberedUsername) {
+        document.getElementById('username').value = rememberedUsername;
+        document.getElementById('rememberMe').checked = true;
+        document.getElementById('password').focus();
+    }
+    
+    // 演示账号快速填充
+    const demoCard = document.querySelector('.card:last-child');
+    if (demoCard) {
+        demoCard.style.cursor = 'pointer';
+        demoCard.addEventListener('click', function() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = 'admin123';
+            document.getElementById('rememberMe').checked = true;
+        });
+    }
+});
+
+// 处理记住用户名
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const username = document.getElementById('username').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
+    
+    if (rememberMe) {
+        localStorage.setItem('rememberedUsername', username);
+    } else {
+        localStorage.removeItem('rememberedUsername');
+    }
+});
+</script>
+{% endblock %}

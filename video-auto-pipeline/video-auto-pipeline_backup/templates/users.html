@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}用户管理 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">用户管理</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-plus"></i> 添加用户
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshUsers()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总用户数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">活跃用户</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ users|selectattr("status", "equalto", "active")|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">管理员</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ users|selectattr("role", "equalto", "admin")|list|length }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-shield fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">今日登录</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-sign-in-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">用户列表</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="usersTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>最后登录</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar avatar-sm me-3">
+                                        <i class="fas fa-user-circle fa-2x text-gray-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-bold">{{ user.username }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email or '-' }}</td>
+                            <td>
+                                <span class="badge badge-{% if user.role == 'admin' %}danger{% elif user.role == 'editor' %}warning{% else %}secondary{% endif %}">
+                                    {% if user.role == 'admin' %}管理员
+                                    {% elif user.role == 'editor' %}编辑者
+                                    {% elif user.role == 'user' %}普通用户
+                                    {% elif user.role == 'viewer' %}查看者
+                                    {% else %}{{ user.role }}
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge badge-{% if user.status == 'active' %}success{% else %}secondary{% endif %}">
+                                    {% if user.status == 'active' %}活跃{% else %}禁用{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ user.last_login[:19] if user.last_login else '从未登录' }}</td>
+                            <td>{{ user.created_at[:19] if user.created_at else '-' }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="editUser({{ user.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if user.username != 'admin' %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加用户模态框 -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名 *</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="email" name="email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">角色 *</label>
+                        <select class="form-select" id="role" name="role" required>
+                            {% for role in roles %}
+                            <option value="{{ role.value }}">{{ role.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">状态</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="active">活跃</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveUser()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑用户模态框 -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑用户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="id">
+                    <div class="mb-3">
+                        <label for="editUsername" class="form-label">用户名 *</label>
+                        <input type="text" class="form-control" id="editUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">邮箱</label>
+                        <input type="email" class="form-control" id="editEmail" name="email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">角色 *</label>
+                        <select class="form-select" id="editRole" name="role" required>
+                            {% for role in roles %}
+                            <option value="{{ role.value }}">{{ role.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">状态</label>
+                        <select class="form-select" id="editStatus" name="status">
+                            <option value="active">活跃</option>
+                            <option value="inactive">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateUser()">更新</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 刷新用户列表
+function refreshUsers() {
+    location.reload();
+}
+
+// 保存新用户
+function saveUser() {
+    const form = document.getElementById('addUserForm');
+    const formData = new FormData(form);
+    const userData = Object.fromEntries(formData);
+    
+    showLoading('正在创建用户...');
+    
+    fetch('/api/users', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showAlert('success', '用户创建成功！');
+            $('#addUserModal').modal('hide');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', '创建失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('error', '创建失败: ' + error.message);
+    });
+}
+
+// 编辑用户
+function editUser(userId) {
+    showLoading('正在加载用户信息...');
+    
+    fetch(`/api/users/${userId}`)
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.error) {
+            showAlert('error', '加载失败: ' + data.error);
+            return;
+        }
+        
+        // 填充表单
+        document.getElementById('editUserId').value = data.id;
+        document.getElementById('editUsername').value = data.username;
+        document.getElementById('editEmail').value = data.email || '';
+        document.getElementById('editRole').value = data.role;
+        document.getElementById('editStatus').value = data.status;
+        
+        $('#editUserModal').modal('show');
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('error', '加载失败: ' + error.message);
+    });
+}
+
+// 更新用户
+function updateUser() {
+    const form = document.getElementById('editUserForm');
+    const formData = new FormData(form);
+    const userData = Object.fromEntries(formData);
+    const userId = userData.id;
+    delete userData.id;
+    
+    showLoading('正在更新用户...');
+    
+    fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showAlert('success', '用户更新成功！');
+            $('#editUserModal').modal('hide');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', '更新失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('error', '更新失败: ' + error.message);
+    });
+}
+
+// 删除用户
+function deleteUser(userId) {
+    if (!confirm('确定要删除这个用户吗？此操作不可恢复。')) {
+        return;
+    }
+    
+    showLoading('正在删除用户...');
+    
+    fetch(`/api/users/${userId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showAlert('success', '用户删除成功！');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', '删除失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('error', '删除失败: ' + error.message);
+    });
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化数据表格
+    if (typeof DataTable !== 'undefined') {
+        $('#usersTable').DataTable({
+            "pageLength": 25,
+            "ordering": true,
+            "searching": true,
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Chinese.json"
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

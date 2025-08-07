@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}系统日志 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-file-alt"></i>
+            系统日志
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志内容 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">最近日志记录</h6>
+                </div>
+                <div class="card-body">
+                    {% if log_entries %}
+                    <div class="log-content" style="height: 500px; overflow-y: auto; background-color: #1a1a1a; color: #00ff00; font-family: 'Courier New', monospace; padding: 15px; border-radius: 5px;">
+                        {% for log in log_entries %}
+                        <div class="log-entry" style="margin-bottom: 2px; word-wrap: break-word;">
+                            <span style="color: #888;">[{{ log.timestamp }}]</span>
+                            <span style="font-weight: bold; margin: 0 5px; color: {% if log.level == 'ERROR' %}#dc3545{% elif log.level == 'WARNING' %}#ffc107{% elif log.level == 'INFO' %}#17a2b8{% else %}#6c757d{% endif %};">[{{ log.level }}]</span>
+                            <span style="color: #00ff00;">{{ log.message }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                        <p class="text-muted">暂无日志记录</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日志统计 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">日志统计</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 mb-0 font-weight-bold text-info">{{ log_entries|length }}</div>
+                                <div class="text-xs font-weight-bold text-uppercase">总记录数</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 mb-0 font-weight-bold text-success">{{ log_entries|selectattr('level', 'equalto', 'INFO')|list|length }}</div>
+                                <div class="text-xs font-weight-bold text-uppercase">INFO</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 mb-0 font-weight-bold text-warning">{{ log_entries|selectattr('level', 'equalto', 'WARNING')|list|length }}</div>
+                                <div class="text-xs font-weight-bold text-uppercase">WARNING</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="h4 mb-0 font-weight-bold text-danger">{{ log_entries|selectattr('level', 'equalto', 'ERROR')|list|length }}</div>
+                                <div class="text-xs font-weight-bold text-uppercase">ERROR</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 系统信息 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">系统信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>日志配置</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>日志级别:</strong> INFO</li>
+                                <li><strong>日志格式:</strong> 时间戳 - 模块 - 级别 - 消息</li>
+                                <li><strong>显示条数:</strong> 最近100条</li>
+                                <li><strong>自动刷新:</strong> 手动刷新</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>日志来源</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Web应用:</strong> Flask应用日志</li>
+                                <li><strong>任务管理:</strong> 任务执行日志</li>
+                                <li><strong>内容处理:</strong> 内容采集和处理日志</li>
+                                <li><strong>系统监控:</strong> 系统状态监控日志</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 简单的页面初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('日志页面加载完成');
+    
+    // 自动滚动到日志底部
+    const logContent = document.querySelector('.log-content');
+    if (logContent) {
+        logContent.scrollTop = logContent.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

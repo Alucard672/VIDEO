@@ -1,0 +1,1007 @@
+{% extends "base.html" %}
+
+{% block title %}内容管理 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block extra_css %}
+<style>
+.content-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.content-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.content-card.selected {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.content-checkbox {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.batch-actions {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: none;
+}
+
+.batch-actions.show {
+    display: block;
+}
+
+.content-preview {
+    max-height: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.source-badge {
+    background: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.category-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.task-badge {
+    background: #6f42c1;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.processing-options {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.view-toggle {
+    margin-bottom: 1rem;
+}
+
+.grid-view .content-item {
+    margin-bottom: 1.5rem;
+}
+
+.list-view .content-item {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-file-alt"></i>
+        内容管理
+        <small class="text-muted">(<span id="totalCount">0</span> 个内容)</small>
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshContent()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-outline-info" onclick="loadTaskContent()">
+                <i class="fas fa-download"></i> 加载任务内容
+            </button>
+            <button type="button" class="btn btn-primary" onclick="showProcessingPanel()">
+                <i class="fas fa-cogs"></i> 批量处理
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 内容统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalArticles">{{ stats.total_articles or 0 }}</h4>
+                        <p class="card-text">总文章数</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-newspaper fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="processedArticles">{{ stats.processed_articles or 0 }}</h4>
+                        <p class="card-text">已处理</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="rawArticles">{{ stats.raw_articles or 0 }}</h4>
+                        <p class="card-text">原始内容</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-edit fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="selectedCount">0</h4>
+                        <p class="card-text">已选择</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-square fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量操作面板 -->
+<div class="batch-actions" id="batchActions">
+    <div class="row">
+        <div class="col-md-8">
+            <h5><i class="fas fa-tasks"></i> 批量操作 (<span id="selectedCountText">0</span> 个已选择)</h5>
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-outline-primary" onclick="batchProcess('rewrite')">
+                    <i class="fas fa-pen"></i> 批量改写
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="batchProcess('summarize')">
+                    <i class="fas fa-compress"></i> 批量摘要
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="batchProcess('translate')">
+                    <i class="fas fa-language"></i> 批量翻译
+                </button>
+                <button type="button" class="btn btn-outline-warning" onclick="batchProcess('extract_keywords')">
+                    <i class="fas fa-tags"></i> 提取关键词
+                </button>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <button type="button" class="btn btn-outline-secondary" onclick="clearSelection()">
+                <i class="fas fa-times"></i> 清除选择
+            </button>
+            <button type="button" class="btn btn-outline-danger" onclick="batchDelete()">
+                <i class="fas fa-trash"></i> 批量删除
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 筛选和搜索 -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <label for="taskFilter" class="form-label">任务筛选</label>
+                        <select class="form-select" id="taskFilter" onchange="filterContent()">
+                            <option value="">全部任务</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="categoryFilter" class="form-label">分类筛选</label>
+                        <select class="form-select" id="categoryFilter" onchange="filterContent()">
+                            <option value="">全部分类</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="sourceFilter" class="form-label">来源筛选</label>
+                        <select class="form-select" id="sourceFilter" onchange="filterContent()">
+                            <option value="">全部来源</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="statusFilter" class="form-label">状态筛选</label>
+                        <select class="form-select" id="statusFilter" onchange="filterContent()">
+                            <option value="">全部状态</option>
+                            <option value="raw">原始内容</option>
+                            <option value="processed">已处理</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="contentSearch" class="form-label">搜索内容</label>
+                        <input type="text" class="form-control" id="contentSearch" placeholder="输入标题或关键词..." onkeyup="searchContent()">
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label">视图</label>
+                        <div class="btn-group d-block view-toggle">
+                            <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="switchView('grid')">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="switchView('list')">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容列表 -->
+<div class="row" id="contentContainer">
+    <!-- 内容将通过JavaScript动态加载 -->
+</div>
+
+<!-- 分页 -->
+<nav aria-label="内容分页">
+    <ul class="pagination justify-content-center" id="contentPagination">
+        <!-- 分页按钮将通过JavaScript动态生成 -->
+    </ul>
+</nav>
+
+<!-- 内容处理模态框 -->
+<div class="modal fade" id="processModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="processModalTitle">内容处理</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="processModalContent">
+                    <!-- 处理选项将动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="startProcessBtn" onclick="startProcessing()">
+                    <i class="fas fa-play"></i> 开始处理
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 内容详情模态框 -->
+<div class="modal fade" id="contentDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">内容详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="contentDetailContent">
+                    <!-- 内容详情将动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="editCurrentContent()">
+                    <i class="fas fa-edit"></i> 编辑
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allContent = [];
+let filteredContent = [];
+let selectedContent = new Set();
+let currentView = 'grid';
+let currentPage = 1;
+let pageSize = 12;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadContent();
+    loadFilters();
+});
+
+// 加载内容列表
+function loadContent() {
+    showLoading();
+    
+    fetch('/api/content')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                allContent = data.content || [];
+                filteredContent = [...allContent];
+                updateStatistics();
+                renderContent();
+                renderPagination();
+            } else {
+                showNotification('加载内容失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('加载内容失败:', error);
+            showNotification('加载内容失败', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+// 加载任务内容
+function loadTaskContent() {
+    showLoading();
+    
+    // 获取所有已完成的内容采集任务
+    fetch('/api/tasks')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const contentTasks = data.tasks.filter(task => 
+                    task.task_type === 'content_fetch' && task.status === 'completed'
+                );
+                
+                if (contentTasks.length === 0) {
+                    showNotification('没有找到已完成的内容采集任务', 'info');
+                    return;
+                }
+                
+                // 为每个任务加载内容
+                const loadPromises = contentTasks.map(task => 
+                    fetch(`/api/content/task/${task.id}`)
+                        .then(response => response.json())
+                        .then(data => data.success ? data.articles : [])
+                );
+                
+                Promise.all(loadPromises)
+                    .then(results => {
+                        const newContent = results.flat();
+                        if (newContent.length > 0) {
+                            allContent = [...allContent, ...newContent];
+                            filteredContent = [...allContent];
+                            updateStatistics();
+                            renderContent();
+                            renderPagination();
+                            showNotification(`成功加载 ${newContent.length} 篇文章`, 'success');
+                        } else {
+                            showNotification('没有找到新的内容', 'info');
+                        }
+                    });
+            }
+        })
+        .catch(error => {
+            console.error('加载任务内容失败:', error);
+            showNotification('加载任务内容失败', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+// 加载筛选器选项
+function loadFilters() {
+    // 加载任务选项
+    fetch('/api/tasks')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const taskFilter = document.getElementById('taskFilter');
+                const contentTasks = data.tasks.filter(task => task.task_type === 'content_fetch');
+                
+                contentTasks.forEach(task => {
+                    const option = document.createElement('option');
+                    option.value = task.id;
+                    option.textContent = task.name;
+                    taskFilter.appendChild(option);
+                });
+            }
+        });
+    
+    // 加载分类和来源选项（从现有内容中提取）
+    updateFilterOptions();
+}
+
+// 更新筛选器选项
+function updateFilterOptions() {
+    const categories = [...new Set(allContent.map(item => item.category).filter(Boolean))];
+    const sources = [...new Set(allContent.map(item => item.source).filter(Boolean))];
+    
+    const categoryFilter = document.getElementById('categoryFilter');
+    const sourceFilter = document.getElementById('sourceFilter');
+    
+    // 清空现有选项（保留"全部"选项）
+    categoryFilter.innerHTML = '<option value="">全部分类</option>';
+    sourceFilter.innerHTML = '<option value="">全部来源</option>';
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+    
+    sources.forEach(source => {
+        const option = document.createElement('option');
+        option.value = source;
+        option.textContent = source;
+        sourceFilter.appendChild(option);
+    });
+}
+
+// 更新统计信息
+function updateStatistics() {
+    const totalArticles = allContent.length;
+    const processedArticles = allContent.filter(item => item.status === 'processed').length;
+    const rawArticles = allContent.filter(item => item.status === 'raw').length;
+    
+    document.getElementById('totalCount').textContent = totalArticles;
+    document.getElementById('totalArticles').textContent = totalArticles;
+    document.getElementById('processedArticles').textContent = processedArticles;
+    document.getElementById('rawArticles').textContent = rawArticles;
+    document.getElementById('selectedCount').textContent = selectedContent.size;
+    document.getElementById('selectedCountText').textContent = selectedContent.size;
+    
+    // 显示/隐藏批量操作面板
+    const batchActions = document.getElementById('batchActions');
+    if (selectedContent.size > 0) {
+        batchActions.classList.add('show');
+    } else {
+        batchActions.classList.remove('show');
+    }
+}
+
+// 渲染内容
+function renderContent() {
+    const container = document.getElementById('contentContainer');
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const contentToShow = filteredContent.slice(startIndex, endIndex);
+    
+    container.innerHTML = '';
+    
+    if (contentToShow.length === 0) {
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4>暂无内容</h4>
+                    <p class="text-muted">点击"加载任务内容"按钮从已完成的任务中加载内容</p>
+                    <button class="btn btn-primary" onclick="loadTaskContent()">
+                        <i class="fas fa-download"></i> 加载任务内容
+                    </button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    contentToShow.forEach(content => {
+        const contentElement = createContentElement(content);
+        container.appendChild(contentElement);
+    });
+    
+    updateFilterOptions();
+}
+
+// 创建内容元素
+function createContentElement(content) {
+    const colClass = currentView === 'grid' ? 'col-md-4' : 'col-12';
+    const div = document.createElement('div');
+    div.className = `${colClass} content-item`;
+    
+    const isSelected = selectedContent.has(content.id);
+    const selectedClass = isSelected ? 'selected' : '';
+    
+    div.innerHTML = `
+        <div class="content-card ${selectedClass}" data-content-id="${content.id}">
+            <div class="card-body position-relative">
+                <div class="content-checkbox">
+                    <input type="checkbox" class="form-check-input" 
+                           ${isSelected ? 'checked' : ''} 
+                           onchange="toggleSelection('${content.id}')">
+                </div>
+                
+                <h6 class="card-title">${content.title}</h6>
+                
+                <div class="mb-2">
+                    ${content.task_id ? `<span class="task-badge me-1">任务: ${content.task_name || content.task_id}</span>` : ''}
+                    <span class="category-badge me-1">${content.category || '未分类'}</span>
+                    ${content.source ? `<span class="source-badge">${content.source}</span>` : ''}
+                </div>
+                
+                <div class="content-preview text-muted mb-2">
+                    ${content.summary || content.content?.substring(0, 100) + '...' || '暂无内容'}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> ${formatTime(content.created_time)}
+                        ${content.word_count ? `| ${content.word_count} 字` : ''}
+                    </small>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-info" onclick="viewContent('${content.id}')" title="查看详情">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="processContent('${content.id}')" title="处理内容">
+                            <i class="fas fa-cogs"></i>
+                        </button>
+                        <button class="btn btn-outline-success" onclick="copyContent('${content.id}')" title="复制内容">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
+// 切换选择状态
+function toggleSelection(contentId) {
+    if (selectedContent.has(contentId)) {
+        selectedContent.delete(contentId);
+    } else {
+        selectedContent.add(contentId);
+    }
+    
+    updateStatistics();
+    
+    // 更新视觉状态
+    const card = document.querySelector(`[data-content-id="${contentId}"]`);
+    if (card) {
+        if (selectedContent.has(contentId)) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    }
+}
+
+// 清除选择
+function clearSelection() {
+    selectedContent.clear();
+    updateStatistics();
+    
+    // 更新所有复选框和卡片状态
+    document.querySelectorAll('.content-card').forEach(card => {
+        card.classList.remove('selected');
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = false;
+        }
+    });
+}
+
+// 批量处理
+function batchProcess(processType) {
+    if (selectedContent.size === 0) {
+        showNotification('请先选择要处理的内容', 'warning');
+        return;
+    }
+    
+    const processNames = {
+        'rewrite': '改写',
+        'summarize': '摘要',
+        'translate': '翻译',
+        'extract_keywords': '关键词提取'
+    };
+    
+    document.getElementById('processModalTitle').textContent = `批量${processNames[processType]}`;
+    
+    let modalContent = `
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            将对 ${selectedContent.size} 个内容进行${processNames[processType]}处理
+        </div>
+    `;
+    
+    // 根据处理类型添加特定选项
+    switch (processType) {
+        case 'rewrite':
+            modalContent += `
+                <div class="mb-3">
+                    <label class="form-label">改写风格</label>
+                    <select class="form-select" id="rewriteStyle">
+                        <option value="formal">正式</option>
+                        <option value="casual">轻松</option>
+                        <option value="professional">专业</option>
+                        <option value="creative">创意</option>
+                    </select>
+                </div>
+            `;
+            break;
+        case 'translate':
+            modalContent += `
+                <div class="mb-3">
+                    <label class="form-label">目标语言</label>
+                    <select class="form-select" id="targetLanguage">
+                        <option value="en">英语</option>
+                        <option value="ja">日语</option>
+                        <option value="ko">韩语</option>
+                        <option value="fr">法语</option>
+                        <option value="de">德语</option>
+                    </select>
+                </div>
+            `;
+            break;
+        case 'summarize':
+            modalContent += `
+                <div class="mb-3">
+                    <label class="form-label">摘要长度</label>
+                    <select class="form-select" id="summaryLength">
+                        <option value="short">简短 (50-100字)</option>
+                        <option value="medium">中等 (100-200字)</option>
+                        <option value="long">详细 (200-300字)</option>
+                    </select>
+                </div>
+            `;
+            break;
+    }
+    
+    document.getElementById('processModalContent').innerHTML = modalContent;
+    document.getElementById('startProcessBtn').setAttribute('data-process-type', processType);
+    
+    const modal = new bootstrap.Modal(document.getElementById('processModal'));
+    modal.show();
+}
+
+// 开始处理
+function startProcessing() {
+    const processType = document.getElementById('startProcessBtn').getAttribute('data-process-type');
+    const selectedIds = Array.from(selectedContent);
+    
+    // 收集处理参数
+    let params = { type: processType, content_ids: selectedIds };
+    
+    switch (processType) {
+        case 'rewrite':
+            params.style = document.getElementById('rewriteStyle')?.value;
+            break;
+        case 'translate':
+            params.target_language = document.getElementById('targetLanguage')?.value;
+            break;
+        case 'summarize':
+            params.length = document.getElementById('summaryLength')?.value;
+            break;
+    }
+    
+    // 关闭模态框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('processModal'));
+    modal.hide();
+    
+    // 显示处理进度
+    showNotification('开始批量处理...', 'info');
+    
+    // 发送处理请求
+    fetch('/api/content/batch-process', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`批量处理已启动，任务ID: ${data.task_id}`, 'success');
+            // 可以添加任务进度监控
+        } else {
+            showNotification('批量处理启动失败: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('批量处理失败:', error);
+        showNotification('批量处理失败', 'error');
+    });
+}
+
+// 查看内容详情
+function viewContent(contentId) {
+    const content = allContent.find(item => item.id === contentId);
+    if (!content) return;
+    
+    document.getElementById('contentDetailContent').innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h4>${content.title}</h4>
+                <div class="mb-3">
+                    ${content.task_id ? `<span class="task-badge me-2">任务: ${content.task_name || content.task_id}</span>` : ''}
+                    <span class="category-badge me-2">${content.category || '未分类'}</span>
+                    ${content.source ? `<span class="source-badge me-2">${content.source}</span>` : ''}
+                    <span class="badge bg-${content.status === 'processed' ? 'success' : 'warning'}">${content.status === 'processed' ? '已处理' : '原始内容'}</span>
+                </div>
+                <div class="content-body" style="max-height: 400px; overflow-y: auto;">
+                    ${content.content ? content.content.replace(/\n/g, '<br>') : '暂无内容'}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <h6>内容信息</h6>
+                <table class="table table-sm">
+                    <tr><td>创建时间</td><td>${formatTime(content.created_time)}</td></tr>
+                    ${content.publish_time ? `<tr><td>发布时间</td><td>${formatTime(content.publish_time)}</td></tr>` : ''}
+                    ${content.author ? `<tr><td>作者</td><td>${content.author}</td></tr>` : ''}
+                    <tr><td>字数</td><td>${content.word_count || 0} 字</td></tr>
+                    ${content.source_url ? `<tr><td>原文链接</td><td><a href="${content.source_url}" target="_blank">查看原文</a></td></tr>` : ''}
+                </table>
+                
+                ${content.tags && content.tags.length > 0 ? `
+                    <h6>标签</h6>
+                    <div class="mb-3">
+                        ${content.tags.map(tag => `<span class="badge bg-secondary me-1">${tag}</span>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('contentDetailModal'));
+    modal.show();
+}
+
+// 复制内容
+function copyContent(contentId) {
+    const content = allContent.find(item => item.id === contentId);
+    if (!content) return;
+    
+    const textToCopy = `${content.title}\n\n${content.content || ''}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        showNotification('内容已复制到剪贴板', 'success');
+    }).catch(err => {
+        console.error('复制失败:', err);
+        showNotification('复制失败', 'error');
+    });
+}
+
+// 处理单个内容
+function processContent(contentId) {
+    selectedContent.clear();
+    selectedContent.add(contentId);
+    updateStatistics();
+    batchProcess('rewrite');
+}
+
+// 批量删除
+function batchDelete() {
+    if (selectedContent.size === 0) {
+        showNotification('请先选择要删除的内容', 'warning');
+        return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${selectedContent.size} 个内容吗？此操作不可恢复。`)) {
+        return;
+    }
+    
+    const selectedIds = Array.from(selectedContent);
+    
+    Promise.all(selectedIds.map(id => 
+        fetch(`/api/content/article/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+    ))
+    .then(results => {
+        const successCount = results.filter(result => result.success).length;
+        showNotification(`成功删除 ${successCount} 个内容`, 'success');
+        clearSelection();
+        loadContent();
+    })
+    .catch(error => {
+        console.error('批量删除失败:', error);
+        showNotification('批量删除失败', 'error');
+    });
+}
+
+// 筛选内容
+function filterContent() {
+    const taskFilter = document.getElementById('taskFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    filteredContent = allContent.filter(content => {
+        let matchTask = !taskFilter || content.task_id === taskFilter;
+        let matchCategory = !categoryFilter || content.category === categoryFilter;
+        let matchSource = !sourceFilter || content.source === sourceFilter;
+        let matchStatus = !statusFilter || content.status === statusFilter;
+        
+        return matchTask && matchCategory && matchSource && matchStatus;
+    });
+    
+    currentPage = 1;
+    renderContent();
+    renderPagination();
+}
+
+// 搜索内容
+function searchContent() {
+    const searchTerm = document.getElementById('contentSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        filterContent();
+        return;
+    }
+    
+    filteredContent = allContent.filter(content => {
+        return content.title.toLowerCase().includes(searchTerm) ||
+               (content.content && content.content.toLowerCase().includes(searchTerm)) ||
+               (content.summary && content.summary.toLowerCase().includes(searchTerm));
+    });
+    
+    currentPage = 1;
+    renderContent();
+    renderPagination();
+}
+
+// 切换视图
+function switchView(view) {
+    currentView = view;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.view-toggle .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[onclick="switchView('${view}')"]`).classList.add('active');
+    
+    renderContent();
+}
+
+// 显示处理面板
+function showProcessingPanel() {
+    if (selectedContent.size === 0) {
+        showNotification('请先选择要处理的内容', 'warning');
+        return;
+    }
+    
+    batchProcess('rewrite');
+}
+
+// 刷新内容
+function refreshContent() {
+    selectedContent.clear();
+    loadContent();
+    showNotification('内容列表已刷新', 'success');
+}
+
+// 渲染分页
+function renderPagination() {
+    const totalPages = Math.ceil(filteredContent.length / pageSize);
+    const pagination = document.getElementById('contentPagination');
+    
+    pagination.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // 上一页
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>`;
+    pagination.appendChild(prevLi);
+    
+    // 页码
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        pagination.appendChild(li);
+    }
+    
+    // 下一页
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>`;
+    pagination.appendChild(nextLi);
+}
+
+// 切换页面
+function changePage(page) {
+    const totalPages = Math.ceil(filteredContent.length / pageSize);
+    if (page < 1 || page > totalPages) return;
+    
+    currentPage = page;
+    renderContent();
+    renderPagination();
+}
+
+// 编辑当前内容
+function editCurrentContent() {
+    showNotification('编辑功能开发中...', 'info');
+}
+
+// 格式化时间
+function formatTime(timeStr) {
+    if (!timeStr) return '未知';
+    try {
+        const date = new Date(timeStr);
+        return date.toLocaleString('zh-CN');
+    } catch (e) {
+        return timeStr;
+    }
+}
+
+// 显示加载状态
+function showLoading() {
+    const container = document.getElementById('contentContainer');
+    container.innerHTML = `
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">正在加载内容...</p>
+        </div>
+    `;
+}
+
+// 隐藏加载状态
+function hideLoading() {
+    // 加载完成后会重新渲染内容，所以不需要特别处理
+}
+
+// 显示通知
+function showNotification(message, type = 'info') {
+    const alertClass = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }[type] || 'alert-info';
+    
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            alerts[alerts.length - 1].remove();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

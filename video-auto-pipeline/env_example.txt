@@ -1,0 +1,35 @@
+# 视频自动化系统环境配置示例
+# 复制此文件为 .env 并填入您的实际配置
+
+# OpenAI API配置
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+
+# 数据库配置
+DATABASE_URL=sqlite:///accounts.db
+
+# 视频处理配置
+FFMPEG_PATH=/usr/local/bin/ffmpeg
+VIDEO_QUALITY=high
+AUDIO_QUALITY=high
+
+# 平台账号配置
+BILIBILI_COOKIE=your_bilibili_cookie_here
+DOUYIN_COOKIE=your_douyin_cookie_here
+XIAOHONGSHU_COOKIE=your_xiaohongshu_cookie_here
+
+# 发布配置
+PUBLISH_INTERVAL=3600  # 发布间隔（秒）
+MAX_DAILY_POSTS=10     # 每日最大发布数量
+
+# 日志配置
+LOG_LEVEL=INFO
+LOG_FILE=logs/system.log
+
+# 代理配置（如果需要）
+HTTP_PROXY=
+HTTPS_PROXY=
+
+# 其他配置
+DEBUG_MODE=false
+AUTO_BACKUP=true 

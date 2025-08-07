@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+
+{% block title %}任务管理 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tasks"></i>
+        任务管理
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">
+                <i class="fas fa-plus"></i> 创建任务
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="refreshTasks()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 任务统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="total-tasks">{{ stats.today_tasks or 0 }}</h4>
+                        <p class="card-text">今日任务</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="running-tasks">{{ stats.running_tasks or 0 }}</h4>
+                        <p class="card-text">运行中</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-play-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="completed-tasks">{{ stats.completed_tasks or 0 }}</h4>
+                        <p class="card-text">已完成</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="failed-tasks">{{ stats.failed_tasks or 0 }}</h4>
+                        <p class="card-text">失败</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-times-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务筛选 -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="taskTypeFilter" class="form-label">任务类型</label>
+                        <select class="form-select" id="taskTypeFilter" onchange="filterTasks()">
+                            <option value="">全部类型</option>
+                            <option value="content_fetch">内容采集</option>
+                            <option value="script_generation">脚本生成</option>
+                            <option value="tts_generation">语音合成</option>
+                            <option value="video_editing">视频剪辑</option>
+                            <option value="video_upload">视频上传</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="statusFilter" class="form-label">任务状态</label>
+                        <select class="form-select" id="statusFilter" onchange="filterTasks()">
+                            <option value="">全部状态</option>
+                            <option value="pending">等待中</option>
+                            <option value="running">运行中</option>
+                            <option value="completed">已完成</option>
+                            <option value="failed">失败</option>
+                            <option value="cancelled">已取消</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="priorityFilter" class="form-label">优先级</label>
+                        <select class="form-select" id="priorityFilter" onchange="filterTasks()">
+                            <option value="">全部优先级</option>
+                            <option value="1">低</option>
+                            <option value="2">普通</option>
+                            <option value="3">高</option>
+                            <option value="4">紧急</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="taskSearch" class="form-label">搜索任务</label>
+                        <input type="text" class="form-control" id="taskSearch" placeholder="输入任务名称..." onkeyup="searchTasks()">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务列表 -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i>
+                    任务列表
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tasksTable">
+                        <thead>
+                            <tr>
+                                <th>任务名称</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>优先级</th>
+                                <th>进度</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody">
+                            {% for task in tasks %}
+                            <tr data-task-id="{{ task.id }}">
+                                <td>
+                                    <strong>{{ task.name }}</strong>
+                                    {% if task.error_message %}
+                                    <br><small class="text-danger">{{ task.error_message }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ task.task_type }}</span>
+                                </td>
+                                <td>
+                                    <span class="status-badge status-{{ task.status }}">
+                                        {{ task.status_text }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if task.priority == 4 %}
+                                    <span class="badge bg-danger">紧急</span>
+                                    {% elif task.priority == 3 %}
+                                    <span class="badge bg-warning">高</span>
+                                    {% elif task.priority == 2 %}
+                                    <span class="badge bg-info">普通</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">低</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar task-progress" 
+                                             style="width: {{ task.progress }}%"
+                                             data-task-id="{{ task.id }}">
+                                            {{ task.progress }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ task.created_time }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="viewTaskDetails('{{ task.id }}')"
+                                                data-bs-toggle="tooltip" title="查看详情">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        
+                                        {% if task.status in ['pending', 'running'] %}
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="cancelTask('{{ task.id }}')"
+                                                data-bs-toggle="tooltip" title="取消任务">
+                                            <i class="fas fa-stop"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if task.status == 'failed' %}
+                                        <button type="button" class="btn btn-outline-success" 
+                                                onclick="retryTask('{{ task.id }}')"
+                                                data-bs-toggle="tooltip" title="重试任务">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if task.status in ['completed', 'failed', 'cancelled'] %}
+                                        <button type="button" class="btn btn-outline-danger" 
+                                                onclick="deleteTask('{{ task.id }}')"
+                                                data-bs-toggle="tooltip" title="删除任务">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建任务模态框 -->
+<div class="modal fade" id="createTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建新任务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTaskForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskName" class="form-label">任务名称 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="taskName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskType" class="form-label">任务类型 <span class="text-danger">*</span></label>
+                                <select class="form-select" id="taskType" required>
+                                    <option value="">请选择任务类型</option>
+                                    <option value="content_fetch">内容采集</option>
+                                    <option value="script_generation">脚本生成</option>
+                                    <option value="tts_generation">语音合成</option>
+                                    <option value="video_editing">视频剪辑</option>
+                                    <option value="video_upload">视频上传</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="taskPriority" class="form-label">优先级</label>
+                                <select class="form-select" id="taskPriority">
+                                    <option value="1">低</option>
+                                    <option value="2" selected>普通</option>
+                                    <option value="3">高</option>
+                                    <option value="4">紧急</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="scheduledTime" class="form-label">计划执行时间</label>
+                                <input type="datetime-local" class="form-control" id="scheduledTime">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">任务描述</label>
+                        <textarea class="form-control" id="taskDescription" rows="3" placeholder="请输入任务描述..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateTask()">
+                    <i class="fas fa-plus"></i> 创建任务
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务详情模态框 -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">任务详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="taskDetailsContent">
+                    <!-- 任务详情内容将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allTasks = [];
+let filteredTasks = [];
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadTasks();
+    loadTaskStatistics();
+    
+    // 定期刷新任务状态
+    setInterval(refreshTaskStatus, 5000);
+});
+
+// 加载任务列表
+function loadTasks() {
+    apiRequest('/api/tasks')
+        .then(data => {
+            allTasks = data.tasks || [];
+            filteredTasks = [...allTasks];
+            
+            updateTaskStatistics();
+            renderTasks();
+        })
+        .catch(error => {
+            showNotification('加载任务列表失败: ' + error.message, 'error');
+        });
+}
+
+// 刷新任务状态
+function refreshTaskStatus() {
+    const runningTasks = allTasks.filter(task => task.status === 'running');
+    
+    runningTasks.forEach(task => {
+        apiRequest(`/api/tasks/${task.id}`)
+            .then(taskData => {
+                const index = allTasks.findIndex(t => t.id === task.id);
+                if (index !== -1) {
+                    allTasks[index] = taskData;
+                    updateTaskRow(taskData);
+                }
+            })
+            .catch(error => {
+                console.error(`刷新任务 ${task.id} 状态失败:`, error);
+            });
+    });
+}
+
+// 更新任务行
+function updateTaskRow(task) {
+    const row = document.querySelector(`tr[data-task-id="${task.id}"]`);
+    if (!row) return;
+    
+    const statusBadge = row.querySelector('.status-badge');
+    if (statusBadge) {
+        statusBadge.className = `status-badge status-${task.status}`;
+        statusBadge.textContent = task.status_text;
+    }
+    
+    const progressBar = row.querySelector('.task-progress');
+    if (progressBar) {
+        progressBar.style.width = `${task.progress}%`;
+        progressBar.textContent = `${task.progress}%`;
+    }
+}
+
+// 更新任务统计
+function updateTaskStatistics() {
+    const stats = {
+        total: allTasks.length,
+        running: allTasks.filter(t => t.status === 'running').length,
+        completed: allTasks.filter(t => t.status === 'completed').length,
+        failed: allTasks.filter(t => t.status === 'failed').length
+    };
+    
+    document.getElementById('total-tasks').textContent = stats.total;
+    document.getElementById('running-tasks').textContent = stats.running;
+    document.getElementById('completed-tasks').textContent = stats.completed;
+    document.getElementById('failed-tasks').textContent = stats.failed;
+}
+
+// 渲染任务列表
+function renderTasks() {
+    const tbody = document.getElementById('tasksTableBody');
+    tbody.innerHTML = '';
+    
+    filteredTasks.forEach(task => {
+        const row = createTaskRow(task);
+        tbody.appendChild(row);
+    });
+}
+
+// 创建任务行
+function createTaskRow(task) {
+    const row = document.createElement('tr');
+    row.setAttribute('data-task-id', task.id);
+    
+    const priorityBadges = {
+        1: '<span class="badge bg-secondary">低</span>',
+        2: '<span class="badge bg-info">普通</span>',
+        3: '<span class="badge bg-warning">高</span>',
+        4: '<span class="badge bg-danger">紧急</span>'
+    };
+    
+    row.innerHTML = `
+        <td>
+            <strong>${task.name}</strong>
+            ${task.error_message ? `<br><small class="text-danger">${task.error_message}</small>` : ''}
+        </td>
+        <td>
+            <span class="badge bg-secondary">${task.task_type}</span>
+        </td>
+        <td>
+            <span class="status-badge status-${task.status}">
+                ${task.status_text}
+            </span>
+        </td>
+        <td>
+            ${priorityBadges[task.priority] || priorityBadges[2]}
+        </td>
+        <td>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar task-progress" 
+                     style="width: ${task.progress}%"
+                     data-task-id="${task.id}">
+                    ${task.progress}%
+                </div>
+            </div>
+        </td>
+        <td>
+            <small>${formatTime(task.created_time)}</small>
+        </td>
+        <td>
+            ${createActionButtons(task)}
+        </td>
+    `;
+    
+    return row;
+}
+
+// 创建操作按钮
+function createActionButtons(task) {
+    let buttons = `
+        <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-info" 
+                    onclick="viewTaskDetails('${task.id}')"
+                    data-bs-toggle="tooltip" title="查看详情">
+                <i class="fas fa-eye"></i>
+            </button>
+    `;
+    
+    if (['pending', 'running'].includes(task.status)) {
+        buttons += `
+            <button type="button" class="btn btn-outline-danger" 
+                    onclick="cancelTask('${task.id}')"
+                    data-bs-toggle="tooltip" title="取消任务">
+                <i class="fas fa-stop"></i>
+            </button>
+        `;
+    }
+    
+    if (task.status === 'failed') {
+        buttons += `
+            <button type="button" class="btn btn-outline-success" 
+                    onclick="retryTask('${task.id}')"
+                    data-bs-toggle="tooltip" title="重试任务">
+                <i class="fas fa-redo"></i>
+            </button>
+        `;
+    }
+    
+    if (['completed', 'failed', 'cancelled'].includes(task.status)) {
+        buttons += `
+            <button type="button" class="btn btn-outline-danger" 
+                    onclick="deleteTask('${task.id}')"
+                    data-bs-toggle="tooltip" title="删除任务">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+    }
+    
+    buttons += '</div>';
+    return buttons;
+}
+
+// 筛选任务
+function filterTasks() {
+    const typeFilter = document.getElementById('taskTypeFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const priorityFilter = document.getElementById('priorityFilter').value;
+    
+    filteredTasks = allTasks.filter(task => {
+        return (!typeFilter || task.task_type === typeFilter) &&
+               (!statusFilter || task.status === statusFilter) &&
+               (!priorityFilter || task.priority.toString() === priorityFilter);
+    });
+    
+    renderTasks();
+}
+
+// 搜索任务
+function searchTasks() {
+    const searchTerm = document.getElementById('taskSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        filterTasks();
+        return;
+    }
+    
+    filteredTasks = allTasks.filter(task => {
+        return task.name.toLowerCase().includes(searchTerm) ||
+               task.task_type.toLowerCase().includes(searchTerm);
+    });
+    
+    renderTasks();
+}
+
+// 刷新任务列表
+function refreshTasks() {
+    loadTasks();
+    showNotification('任务列表已刷新', 'success');
+}
+
+// 提交创建任务
+function submitCreateTask() {
+    const taskData = {
+        name: document.getElementById('taskName').value,
+        task_type: document.getElementById('taskType').value,
+        priority: parseInt(document.getElementById('taskPriority').value),
+        scheduled_time: document.getElementById('scheduledTime').value || null,
+        description: document.getElementById('taskDescription').value,
+        params: {}
+    };
+    
+    if (!taskData.name || !taskData.task_type) {
+        showNotification('请填写任务名称和类型', 'error');
+        return;
+    }
+    
+    apiRequest('/api/tasks', {
+        method: 'POST',
+        body: taskData
+    })
+    .then(data => {
+        showNotification('任务创建成功', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('createTaskModal')).hide();
+        document.getElementById('createTaskForm').reset();
+        loadTasks();
+    })
+    .catch(error => {
+        showNotification('任务创建失败: ' + error.message, 'error');
+    });
+}
+
+// 查看任务详情
+function viewTaskDetails(taskId) {
+    apiRequest(`/api/tasks/${taskId}`)
+        .then(task => {
+            const content = document.getElementById('taskDetailsContent');
+            content.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基本信息</h6>
+                        <table class="table table-sm">
+                            <tr><td>任务ID:</td><td>${task.id}</td></tr>
+                            <tr><td>任务名称:</td><td>${task.name}</td></tr>
+                            <tr><td>任务类型:</td><td>${task.task_type}</td></tr>
+                            <tr><td>状态:</td><td><span class="status-badge status-${task.status}">${task.status_text}</span></td></tr>
+                            <tr><td>进度:</td><td>${task.progress}%</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>时间信息</h6>
+                        <table class="table table-sm">
+                            <tr><td>创建时间:</td><td>${formatTime(task.created_time)}</td></tr>
+                            <tr><td>开始时间:</td><td>${task.started_time ? formatTime(task.started_time) : '未开始'}</td></tr>
+                            <tr><td>完成时间:</td><td>${task.completed_time ? formatTime(task.completed_time) : '未完成'}</td></tr>
+                            <tr><td>重试次数:</td><td>${task.retry_count}/${task.max_retries}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                ${task.error_message ? `
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>错误信息</h6>
+                        <div class="alert alert-danger">${task.error_message}</div>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showNotification('获取任务详情失败: ' + error.message, 'error');
+        });
+}
+
+// 取消任务
+function cancelTask(taskId) {
+    confirmAction('确定要取消这个任务吗？', () => {
+        apiRequest(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            body: { status: 'cancelled' }
+        })
+        .then(data => {
+            showNotification('任务已取消', 'success');
+            loadTasks();
+        })
+        .catch(error => {
+            showNotification('取消任务失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 重试任务
+function retryTask(taskId) {
+    confirmAction('确定要重试这个任务吗？', () => {
+        apiRequest(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            body: { status: 'pending', retry_count: 0 }
+        })
+        .then(data => {
+            showNotification('任务已重新加入队列', 'success');
+            loadTasks();
+        })
+        .catch(error => {
+            showNotification('重试任务失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 删除任务
+function deleteTask(taskId) {
+    confirmAction('确定要删除这个任务吗？删除后无法恢复。', () => {
+        apiRequest(`/api/tasks/${taskId}`, {
+            method: 'DELETE'
+        })
+        .then(data => {
+            showNotification('任务已删除', 'success');
+            loadTasks();
+        })
+        .catch(error => {
+            showNotification('删除任务失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 加载任务统计
+function loadTaskStatistics() {
+    apiRequest('/api/dashboard/stats')
+        .then(data => {
+            document.getElementById('total-tasks').textContent = data.today_tasks || 0;
+            document.getElementById('running-tasks').textContent = data.running_tasks || 0;
+            document.getElementById('completed-tasks').textContent = data.completed_tasks || 0;
+            document.getElementById('failed-tasks').textContent = data.failed_tasks || 0;
+        })
+        .catch(error => {
+            console.error('加载任务统计失败:', error);
+        });
+}
+</script>
+{% endblock %}

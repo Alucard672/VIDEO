@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}帮助文档 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">帮助文档</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printHelp()">
+                    <i class="fas fa-print"></i> 打印
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportHelp()">
+                    <i class="fas fa-download"></i> 导出PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 侧边导航 -->
+        <div class="col-md-3">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">目录</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for section in help_sections %}
+                        <a href="#{{ section.id }}" class="list-group-item list-group-item-action" onclick="showSection('{{ section.id }}')">
+                            {{ section.title }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快速链接 -->
+            <div class="card shadow mt-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">快速链接</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <a href="/tasks" class="list-group-item list-group-item-action">
+                            <i class="fas fa-tasks mr-2"></i> 任务管理
+                        </a>
+                        <a href="/content" class="list-group-item list-group-item-action">
+                            <i class="fas fa-file-alt mr-2"></i> 内容管理
+                        </a>
+                        <a href="/accounts" class="list-group-item list-group-item-action">
+                            <i class="fas fa-user-cog mr-2"></i> 账号管理
+                        </a>
+                        <a href="/monitoring" class="list-group-item list-group-item-action">
+                            <i class="fas fa-chart-line mr-2"></i> 系统监控
+                        </a>
+                        <a href="/config" class="list-group-item list-group-item-action">
+                            <i class="fas fa-cog mr-2"></i> 系统配置
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容 -->
+        <div class="col-md-9">
+            {% for section in help_sections %}
+            <div class="card shadow mb-4" id="section-{{ section.id }}">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ section.title }}</h6>
+                </div>
+                <div class="card-body">
+                    {{ section.content | safe }}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- 常见问题 -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">常见问题 FAQ</h6>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq1">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                    如何创建第一个自动化任务？
+                                </button>
+                            </h2>
+                            <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>进入"任务管理"页面</li>
+                                        <li>点击"创建任务"按钮</li>
+                                        <li>选择任务类型（如内容采集、视频剪辑等）</li>
+                                        <li>填写任务参数和配置</li>
+                                        <li>设置执行时间和优先级</li>
+                                        <li>点击"保存"创建任务</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq2">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                    如何配置多平台账号？
+                                </button>
+                            </h2>
+                            <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>进入"账号管理"页面</li>
+                                        <li>点击"添加账号"</li>
+                                        <li>选择平台类型（抖音、B站、小红书等）</li>
+                                        <li>输入账号信息和认证凭据</li>
+                                        <li>测试连接确保配置正确</li>
+                                        <li>保存账号配置</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq3">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                    系统运行缓慢怎么办？
+                                </button>
+                            </h2>
+                            <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>检查系统监控页面，查看CPU、内存使用情况</li>
+                                        <li>清理临时文件和日志文件</li>
+                                        <li>减少同时运行的任务数量</li>
+                                        <li>优化任务参数和配置</li>
+                                        <li>考虑升级硬件配置</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq4">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                                    如何备份和恢复数据？
+                                </button>
+                            </h2>
+                            <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>备份：</strong></p>
+                                    <ol>
+                                        <li>进入系统配置页面</li>
+                                        <li>点击"数据备份"</li>
+                                        <li>选择备份内容（数据库、配置文件、媒体文件）</li>
+                                        <li>下载备份文件</li>
+                                    </ol>
+                                    <p><strong>恢复：</strong></p>
+                                    <ol>
+                                        <li>停止系统服务</li>
+                                        <li>上传备份文件</li>
+                                        <li>执行恢复操作</li>
+                                        <li>重启系统服务</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faq5">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                                    如何查看系统日志？
+                                </button>
+                            </h2>
+                            <div id="collapse5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>进入"系统日志"页面</li>
+                                        <li>选择要查看的日志文件</li>
+                                        <li>使用过滤器筛选特定级别或时间范围的日志</li>
+                                        <li>使用搜索功能查找特定关键词</li>
+                                        <li>可以下载日志文件进行离线分析</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 联系支持 -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">联系支持</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>技术支持</h6>
+                            <p>如果您遇到技术问题，请通过以下方式联系我们：</p>
+                            <ul>
+                                <li>邮箱：support@example.com</li>
+                                <li>电话：400-123-4567</li>
+                                <li>在线客服：工作日 9:00-18:00</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>反馈建议</h6>
+                            <p>我们欢迎您的反馈和建议：</p>
+                            <ul>
+                                <li>功能建议：feedback@example.com</li>
+                                <li>Bug报告：bugs@example.com</li>
+                                <li>用户社区：https://community.example.com</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 版本信息 -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">版本信息</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>系统版本：</strong></td>
+                                    <td>v2.0.0</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>发布日期：</strong></td>
+                                    <td>2025-01-06</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Python版本：</strong></td>
+                                    <td>3.8+</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>数据库：</strong></td>
+                                    <td>SQLite 3</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Web框架：</strong></td>
+                                    <td>Flask 2.0+</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>许可证：</strong></td>
+                                    <td>MIT License</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 显示指定章节
+function showSection(sectionId) {
+    // 滚动到指定章节
+    const element = document.getElementById('section-' + sectionId);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// 打印帮助文档
+function printHelp() {
+    window.print();
+}
+
+// 导出PDF
+function exportHelp() {
+    showAlert('info', '导出功能正在开发中...');
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 高亮当前章节
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id.replace('section-', '');
+                // 更新导航高亮
+                document.querySelectorAll('.list-group-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const navItem = document.querySelector(`a[href="#${id}"]`);
+                if (navItem) {
+                    navItem.classList.add('active');
+                }
+            }
+        });
+    }, {
+        threshold: 0.5
+    });
+
+    // 观察所有章节
+    document.querySelectorAll('[id^="section-"]').forEach(section => {
+        observer.observe(section);
+    });
+});
+</script>
+{% endblock %}
