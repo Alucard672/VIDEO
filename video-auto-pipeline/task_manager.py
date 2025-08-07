@@ -261,6 +261,25 @@ class TaskManager:
         """
         return [task.to_dict() for task in self.tasks.values() if task.type == task_type]
     
+    def get_recent_tasks(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """获取最近的任务
+        
+        Args:
+            limit: 返回的任务数量限制
+            
+        Returns:
+            任务列表
+        """
+        # 按创建时间排序，最新的在前
+        sorted_tasks = sorted(
+            self.tasks.values(),
+            key=lambda t: t.created_at,
+            reverse=True
+        )
+        
+        # 返回指定数量的任务
+        return [task.to_dict() for task in sorted_tasks[:limit]]
+    
     def cancel_task(self, task_id: int) -> bool:
         """取消任务
         
