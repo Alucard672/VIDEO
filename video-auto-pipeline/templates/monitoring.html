@@ -145,62 +145,42 @@
                             </tr>
                         </thead>
                         <tbody id="process-list">
-                            <tr>
-                                <td>
-                                    <i class="fas fa-cog text-primary"></i>
-                                    视频处理服务
-                                </td>
-                                <td>1234</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">15.2%</span>
-                                        <div class="progress progress-custom" style="width: 60px; height: 6px;">
-                                            <div class="progress-bar" style="width: 15%"></div>
+                            {% if processes %}
+                                {% for process in processes %}
+                                <tr>
+                                    <td>
+                                        <i class="fas {% if 'video' in process.name.lower() %}fa-cog text-primary{% elif 'upload' in process.name.lower() %}fa-upload text-success{% else %}fa-tasks text-info{% endif %}"></i>
+                                        {{ process.name }}
+                                    </td>
+                                    <td>{{ process.pid }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">{{ process.cpu_percent|round(1) }}%</span>
+                                            <div class="progress progress-custom" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar" style="width: {{ process.cpu_percent }}%"></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td>256 MB</td>
-                                <td>
-                                    <span class="status-badge status-running">运行中</span>
-                                </td>
-                                <td>2小时15分</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-warning" onclick="restartProcess(1234)">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="stopProcess(1234)">
-                                        <i class="fas fa-stop"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <i class="fas fa-upload text-success"></i>
-                                    上传服务
-                                </td>
-                                <td>5678</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">8.7%</span>
-                                        <div class="progress progress-custom" style="width: 60px; height: 6px;">
-                                            <div class="progress-bar" style="width: 9%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>128 MB</td>
-                                <td>
-                                    <span class="status-badge status-running">运行中</span>
-                                </td>
-                                <td>1小时30分</td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-warning" onclick="restartProcess(5678)">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="stopProcess(5678)">
-                                        <i class="fas fa-stop"></i>
-                                    </button>
-                                </td>
-                            </tr>
+                                    </td>
+                                    <td>{{ process.memory_info }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ process.status }}">{{ process.status_text }}</span>
+                                    </td>
+                                    <td>{{ process.running_time }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="restartProcess({{ process.pid }})">
+                                            <i class="fas fa-redo"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="stopProcess({{ process.pid }})">
+                                            <i class="fas fa-stop"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center">暂无进程数据</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>

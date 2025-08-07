@@ -48,6 +48,16 @@ class SystemMonitor:
         # 存储历史网络数据用于计算速率
         self.last_network_stats = psutil.net_io_counters()
         self.last_check_time = time.time()
+        
+        # 添加缓存机制
+        self._metrics_cache = None
+        self._metrics_cache_time = 0
+        self._cache_ttl = 3  # 缓存有效期3秒
+        
+        # 添加进程信息缓存
+        self._process_cache = None
+        self._process_cache_time = 0
+        self._process_cache_ttl = 5  # 进程信息缓存5秒
     
     def _init_database(self):
         """初始化数据库"""
@@ -105,9 +115,14 @@ class SystemMonitor:
     
     def get_current_metrics(self) -> SystemMetrics:
         """获取当前系统指标"""
+        # 检查缓存是否有效
+        current_time = time.time()
+        if self._metrics_cache and (current_time - self._metrics_cache_time) < self._cache_ttl:
+            return self._metrics_cache
+        
         try:
-            # CPU使用率
-            cpu_percent = psutil.cpu_percent(interval=1)
+            # CPU使用率 - 将interval设为0.1秒而不是1秒，提高响应速度
+            cpu_percent = psutil.cpu_percent(interval=0.1)
             
             # 内存使用率
             memory = psutil.virtual_memory()
@@ -119,7 +134,6 @@ class SystemMonitor:
             
             # 网络统计
             network_stats = psutil.net_io_counters()
-            current_time = time.time()
             
             # 计算网络速率
             time_delta = current_time - self.last_check_time
@@ -133,7 +147,7 @@ class SystemMonitor:
             self.last_network_stats = network_stats
             self.last_check_time = current_time
             
-            # 进程数量
+            # 进程数量 - 使用更高效的方法
             process_count = len(psutil.pids())
             
             # 温度（如果可用）
@@ -149,7 +163,8 @@ class SystemMonitor:
             except:
                 pass
             
-            return SystemMetrics(
+            # 创建指标对象
+            metrics = SystemMetrics(
                 timestamp=datetime.now().isoformat(),
                 cpu_percent=cpu_percent,
                 memory_percent=memory_percent,
@@ -160,8 +175,19 @@ class SystemMonitor:
                 temperature=temperature
             )
             
+            # 更新缓存
+            self._metrics_cache = metrics
+            self._metrics_cache_time = current_time
+            
+            return metrics
+            
         except Exception as e:
             logger.error(f"获取系统指标失败: {e}")
+            # 如果出错但缓存存在，返回缓存的数据
+            if self._metrics_cache:
+                return self._metrics_cache
+                
+            # 否则返回空数据
             return SystemMetrics(
                 timestamp=datetime.now().isoformat(),
                 cpu_percent=0.0,
@@ -286,13 +312,22 @@ class SystemMonitor:
     
     def get_process_info(self) -> List[Dict]:
         """获取进程信息"""
+        # 检查缓存是否有效
+        current_time = time.time()
+        if self._process_cache and (current_time - self._process_cache_time) < self._process_cache_ttl:
+            return self._process_cache
+            
         processes = []
         
         try:
+            # 使用更高效的方式获取进程信息
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'status']):
                 try:
                     proc_info = proc.info
-                    if proc_info['cpu_percent'] > 1.0 or proc_info['memory_percent'] > 1.0:
+                    # 只关注使用资源较多的进程，减少处理量
+                    cpu_percent = proc_info.get('cpu_percent', 0)
+                    memory_percent = proc_info.get('memory_percent', 0)
+                    if cpu_percent is not None and memory_percent is not None and (cpu_percent > 1.0 or memory_percent > 1.0):
                         processes.append({
                             'pid': proc_info['pid'],
                             'name': proc_info['name'],
@@ -305,10 +340,19 @@ class SystemMonitor:
             
             # 按CPU使用率排序
             processes.sort(key=lambda x: x['cpu_percent'], reverse=True)
-            return processes[:20]  # 返回前20个进程
+            result = processes[:20]  # 返回前20个进程
+            
+            # 更新缓存
+            self._process_cache = result
+            self._process_cache_time = current_time
+            
+            return result
             
         except Exception as e:
             logger.error(f"获取进程信息失败: {e}")
+            # 如果出错但缓存存在，返回缓存的数据
+            if self._process_cache:
+                return self._process_cache
             return []
     
     def get_historical_data(self, hours: int = 24) -> List[Dict]:
