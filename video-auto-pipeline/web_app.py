@@ -170,6 +170,16 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"注册视频路由失败: {e}")
 
+# 导入仪表盘API
+try:
+    from api_dashboard import dashboard_api
+    app.register_blueprint(dashboard_api)
+    logger.info("仪表盘API已注册")
+except ImportError as e:
+    logger.warning(f"仪表盘API不可用: {e}")
+except Exception as e:
+    logger.error(f"注册仪表盘API失败: {e}")
+
 @app.route('/')
 def index():
     """主页"""
