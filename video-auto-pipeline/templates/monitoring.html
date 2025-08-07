@@ -437,14 +437,19 @@ function addLogEntry(level, message) {
 }
 
 // 刷新监控数据
-function refreshMonitoring() {
+function refreshMonitoring(showNotify = false) {
     apiRequest('/api/monitoring/current-metrics')
         .then(data => {
             updateSystemMetrics(data);
-            showNotification('监控数据已刷新', 'success');
+            if (showNotify) {
+                showNotification('监控数据已刷新', 'success');
+            }
         })
         .catch(error => {
-            showNotification('刷新失败: ' + error.message, 'error');
+            console.error('刷新失败:', error);
+            if (showNotify) {
+                showNotification('刷新失败: ' + error.message, 'error');
+            }
         });
 }
 
@@ -547,8 +552,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 请求初始数据
     refreshMonitoring();
     
-    // 定期刷新数据
-    setInterval(refreshMonitoring, 5000); // 每5秒刷新一次
+    // 定期刷新数据 - 不显示通知
+    setInterval(() => refreshMonitoring(false), 5000); // 每5秒刷新一次
 });
 </script>
 {% endblock %}
