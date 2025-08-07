@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">数据分析</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshAnalytics()">
+                    <i class="fas fa-sync-alt"></i> 刷新数据
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportData()">
+                    <i class="fas fa-download"></i> 导出报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 总体统计卡片 -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">总视频数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ content_stats.get('total_articles', 0) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-video fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">总观看量</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,}".format(data.total_stats.total_views) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-eye fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">总点赞数</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ "{:,}".format(data.total_stats.total_likes) }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-thumbs-up fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">平均互动率</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ data.total_stats.avg_engagement }}%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图表区域 -->
+    <div class="row mb-4">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">平台数据对比</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow">
+                            <div class="dropdown-header">图表选项:</div>
+                            <a class="dropdown-item" href="#" onclick="switchChart('videos')">视频数量</a>
+                            <a class="dropdown-item" href="#" onclick="switchChart('views')">观看量</a>
+                            <a class="dropdown-item" href="#" onclick="switchChart('engagement')">互动率</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">平台分布</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4 pb-2">
+                        <canvas id="platformPieChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-primary"></i> 抖音
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-success"></i> 哔哩哔哩
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-info"></i> 小红书
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-warning"></i> 快手
+                        </span>
+                        <span class="mr-2">
+                            <i class="fas fa-circle text-danger"></i> YouTube
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 平台详细数据 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">平台详细数据</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="platformTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>平台</th>
+                                    <th>视频数量</th>
+                                    <th>总观看量</th>
+                                    <th>总点赞数</th>
+                                    <th>平均观看量</th>
+                                    <th>互动率</th>
+                                    <th>状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for platform, summary in data.platform_summaries.items() %}
+                                <tr>
+                                    <td>
+                                        <i class="fab fa-{{ platform }} mr-2"></i>
+                                        {% if platform == 'douyin' %}抖音
+                                        {% elif platform == 'bilibili' %}哔哩哔哩
+                                        {% elif platform == 'xiaohongshu' %}小红书
+                                        {% elif platform == 'kuaishou' %}快手
+                                        {% elif platform == 'youtube' %}YouTube
+                                        {% else %}{{ platform }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ summary.total_videos }}</td>
+                                    <td>{{ "{:,}".format(summary.total_views) }}</td>
+                                    <td>{{ "{:,}".format(summary.total_likes) }}</td>
+                                    <td>{{ "{:,.0f}".format(summary.avg_views) }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if summary.engagement_rate > 5 %}success{% elif summary.engagement_rate > 2 %}warning{% else %}secondary{% endif %}">
+                                            {{ summary.engagement_rate }}%
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if summary.total_videos > 0 %}
+                                            <span class="badge badge-success">活跃</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">无数据</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门视频 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">热门视频 TOP 10</h6>
+                </div>
+                <div class="card-body">
+                    {% if data.trending_videos %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>排名</th>
+                                    <th>标题</th>
+                                    <th>平台</th>
+                                    <th>观看量</th>
+                                    <th>点赞数</th>
+                                    <th>评论数</th>
+                                    <th>互动率</th>
+                                    <th>发布时间</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for video in data.trending_videos %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ video.title }}">
+                                            {{ video.title }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ video.platform }}</span>
+                                    </td>
+                                    <td>{{ "{:,}".format(video.views) }}</td>
+                                    <td>{{ "{:,}".format(video.likes) }}</td>
+                                    <td>{{ "{:,}".format(video.comments) }}</td>
+                                    <td>
+                                        <span class="badge badge-{% if video.engagement_rate > 5 %}success{% elif video.engagement_rate > 2 %}warning{% else %}secondary{% endif %}">
+                                            {{ video.engagement_rate }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ video.publish_time[:10] if video.publish_time else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-gray-300 mb-3"></i>
+                        <p class="text-muted">暂无热门视频数据</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日报摘要 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">今日数据摘要</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>总体数据</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>发布视频:</strong> {{ data.daily_report.summary.total_videos }} 个</li>
+                                <li><strong>总观看量:</strong> {{ "{:,}".format(data.daily_report.summary.total_views) }}</li>
+                                <li><strong>总点赞数:</strong> {{ "{:,}".format(data.daily_report.summary.total_likes) }}</li>
+                                <li><strong>总评论数:</strong> {{ "{:,}".format(data.daily_report.summary.total_comments) }}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>平台分布</h6>
+                            {% if data.daily_report.platforms %}
+                            <ul class="list-unstyled">
+                                {% for platform, stats in data.daily_report.platforms.items() %}
+                                <li><strong>{{ platform }}:</strong> {{ stats.video_count }} 个视频</li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">今日暂无发布数据</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图表脚本 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// 图表数据
+const chartData = {{ data.chart_data | tojson }};
+
+// 平台对比图表
+const platformCtx = document.getElementById('platformChart').getContext('2d');
+let platformChart = new Chart(platformCtx, {
+    type: 'bar',
+    data: {
+        labels: chartData.platforms.map(p => {
+            const names = {
+                'douyin': '抖音',
+                'bilibili': '哔哩哔哩',
+                'xiaohongshu': '小红书',
+                'kuaishou': '快手',
+                'youtube': 'YouTube'
+            };
+            return names[p] || p;
+        }),
+        datasets: [{
+            label: '视频数量',
+            data: chartData.videos,
+            backgroundColor: 'rgba(78, 115, 223, 0.8)',
+            borderColor: 'rgba(78, 115, 223, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 平台分布饼图
+const pieCtx = document.getElementById('platformPieChart').getContext('2d');
+const platformPieChart = new Chart(pieCtx, {
+    type: 'doughnut',
+    data: {
+        labels: chartData.platforms.map(p => {
+            const names = {
+                'douyin': '抖音',
+                'bilibili': '哔哩哔哩',
+                'xiaohongshu': '小红书',
+                'kuaishou': '快手',
+                'youtube': 'YouTube'
+            };
+            return names[p] || p;
+        }),
+        datasets: [{
+            data: chartData.videos,
+            backgroundColor: [
+                '#4e73df',
+                '#1cc88a',
+                '#36b9cc',
+                '#f6c23e',
+                '#e74a3b'
+            ],
+            hoverBackgroundColor: [
+                '#2e59d9',
+                '#17a673',
+                '#2c9faf',
+                '#dda20a',
+                '#c0392b'
+            ],
+            hoverBorderColor: "rgba(234, 236, 244, 1)",
+        }],
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// 切换图表类型
+function switchChart(type) {
+    let data, label, color;
+    
+    switch(type) {
+        case 'videos':
+            data = chartData.videos;
+            label = '视频数量';
+            color = 'rgba(78, 115, 223, 0.8)';
+            break;
+        case 'views':
+            data = chartData.views;
+            label = '观看量';
+            color = 'rgba(28, 200, 138, 0.8)';
+            break;
+        case 'engagement':
+            data = chartData.engagement_rates;
+            label = '互动率 (%)';
+            color = 'rgba(246, 194, 62, 0.8)';
+            break;
+        default:
+            return;
+    }
+    
+    platformChart.data.datasets[0].data = data;
+    platformChart.data.datasets[0].label = label;
+    platformChart.data.datasets[0].backgroundColor = color;
+    platformChart.update();
+}
+
+// 刷新分析数据
+function refreshAnalytics() {
+    showLoading('正在刷新数据...');
+    location.reload();
+}
+
+// 导出数据
+function exportData() {
+    showLoading('正在导出数据...');
+    
+    fetch('/api/analytics/export', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showAlert('success', '数据导出成功！');
+            // 下载文件
+            const link = document.createElement('a');
+            link.href = data.download_url;
+            link.download = data.filename;
+            link.click();
+        } else {
+            showAlert('error', '导出失败: ' + data.error);
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showAlert('error', '导出失败: ' + error.message);
+    });
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化数据表格
+    if (typeof DataTable !== 'undefined') {
+        $('#platformTable').DataTable({
+            "pageLength": 10,
+            "ordering": true,
+            "searching": false,
+            "info": false,
+            "paging": false
+        });
+    }
+});
+</script>
+{% endblock %}

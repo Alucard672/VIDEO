@@ -1,0 +1,42 @@
+# Web框架
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+Flask-WTF==1.1.1
+
+# 数据库
+SQLAlchemy==2.0.21
+
+# HTTP请求
+requests==2.31.0
+
+# 文件处理
+Pillow==10.0.1
+python-dotenv==1.0.0
+
+# 日期时间处理
+python-dateutil==2.8.2
+
+# JSON处理
+jsonschema==4.19.1
+
+# 加密
+bcrypt==4.0.1
+
+# 任务队列（可选）
+celery==5.3.2
+redis==5.0.0
+
+# 视频处理（可选）
+opencv-python==4.8.1.78
+moviepy==1.0.3
+
+# AI服务客户端（可选）
+openai==0.28.1
+
+# 腾讯云SDK（可选）
+tencentcloud-sdk-python==3.0.975
+
+# 开发工具
+pytest==7.4.2
+pytest-flask==1.2.0

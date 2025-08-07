@@ -1,0 +1,112 @@
+[
+  {
+    "title": "Show HN: Kitten TTS – 25MB CPU-Only, Open-Source TTS Model",
+    "content": "Hacker News: Show HN: Kitten TTS – 25MB CPU-Only, Open-Source TTS Model",
+    "url": "https://github.com/KittenML/KittenTTS",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 13:04:36",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:01.049932",
+    "score": 327
+  },
+  {
+    "title": "Open models by OpenAI",
+    "content": "Hacker News: Open models by OpenAI",
+    "url": "https://openai.com/open-models/",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 01:02:02",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:01.382419",
+    "score": 1793
+  },
+  {
+    "title": "I gave the AI arms and legs then it rejected me",
+    "content": "Hacker News: I gave the AI arms and legs then it rejected me",
+    "url": "https://grell.dev/blog/ai_rejection",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 15:25:43",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:01.709721",
+    "score": 256
+  },
+  {
+    "title": "Genie 3: A new frontier for world models",
+    "content": "Hacker News: Genie 3: A new frontier for world models",
+    "url": "https://deepmind.google/discover/blog/genie-3-a-new-frontier-for-world-models/",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-05 22:08:52",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:02.039962",
+    "score": 1321
+  },
+  {
+    "title": "I'm Archiving Picocrypt",
+    "content": "Hacker News: I'm Archiving Picocrypt",
+    "url": "https://github.com/Picocrypt/Picocrypt/issues/134",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 11:14:22",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:02.370100",
+    "score": 129
+  },
+  {
+    "title": "Some thoughts on journals, refereeing, and the P vs. NP problem",
+    "content": "Hacker News: Some thoughts on journals, refereeing, and the P vs. NP problem",
+    "url": "https://blog.computationalcomplexity.org/2025/08/some-thoughts-on-journals-refereeing.html",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 15:12:08",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:03.099304",
+    "score": 20
+  },
+  {
+    "title": "Spotting base64 encoded JSON, certificates, and private keys",
+    "content": "Hacker News: Spotting base64 encoded JSON, certificates, and private keys",
+    "url": "https://ergaster.org/til/base64-encoded-json/",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 03:17:38",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:03.651654",
+    "score": 290
+  },
+  {
+    "title": "Ollama Turbo",
+    "content": "Hacker News: Ollama Turbo",
+    "url": "https://ollama.com/turbo",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-06 02:46:18",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:04.060493",
+    "score": 358
+  },
+  {
+    "title": "Kart – Distributed version-control for geospatial and tabular data",
+    "content": "Hacker News: Kart – Distributed version-control for geospatial and tabular data",
+    "url": "https://kartproject.org/",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-04 14:35:17",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:04.388640",
+    "score": 24
+  },
+  {
+    "title": "Ozempic shows anti-aging effects in trial",
+    "content": "Hacker News: Ozempic shows anti-aging effects in trial",
+    "url": "https://trial.medpath.com/news/5c43f09ebb6d0f8e/ozempic-shows-anti-aging-effects-in-first-clinical-trial-reversing-biological-age-by-3-1-years",
+    "source": "Hacker News",
+    "category": "科技",
+    "timestamp": "2025-08-05 22:28:39",
+    "image_url": "",
+    "collected_at": "2025-08-06T17:58:04.719172",
+    "score": 283
+  }
+]

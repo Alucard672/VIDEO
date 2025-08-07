@@ -1,0 +1,24 @@
+[
+  {
+    "title": "B站热门视频：科技前沿资讯",
+    "description": "这是来自B站的热门视频，内容丰富，制作精良。",
+    "duration": "5:53",
+    "platform": "bilibili",
+    "category": "热门",
+    "url": "https://bilibili.com/video/BV6568398",
+    "views": 53773,
+    "likes": 2633,
+    "collected_at": "2025-08-07T13:02:51.406034"
+  },
+  {
+    "title": "B站热门视频：生活分享",
+    "description": "B站热门视频，分享日常生活和有趣见闻。",
+    "duration": "8:10",
+    "platform": "bilibili",
+    "category": "热门",
+    "url": "https://bilibili.com/video/BV7216989",
+    "views": 35668,
+    "likes": 8593,
+    "collected_at": "2025-08-07T13:02:51.406040"
+  }
+]

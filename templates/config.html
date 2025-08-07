@@ -1,0 +1,674 @@
+{% extends "base.html" %}
+
+{% block title %}系统配置 - 视频自动化系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">系统配置</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportConfig()">
+                    <i class="fas fa-download"></i> 导出配置
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="importConfig()">
+                    <i class="fas fa-upload"></i> 导入配置
+                </button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="saveAllConfigs()">
+                    <i class="fas fa-save"></i> 保存所有配置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置标签页 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-config" type="button" role="tab">
+                                <i class="fas fa-upload"></i> 上传配置
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system-config" type="button" role="tab">
+                                <i class="fas fa-cog"></i> 系统配置
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notification-tab" data-bs-toggle="tab" data-bs-target="#notification-config" type="button" role="tab">
+                                <i class="fas fa-bell"></i> 通知配置
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="configTabContent">
+                        <!-- 上传配置 -->
+                        <div class="tab-pane fade show active" id="upload-config" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">平台上传配置</h6>
+                                    
+                                    <!-- 抖音配置 -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fab fa-tiktok text-dark"></i> 抖音上传配置
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group mb-3">
+                                                <label>API密钥</label>
+                                                <input type="password" class="form-control" id="douyin-api-key" placeholder="请输入抖音API密钥">
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>上传质量</label>
+                                                <select class="form-control" id="douyin-quality">
+                                                    <option value="high">高清</option>
+                                                    <option value="medium" selected>标清</option>
+                                                    <option value="low">低清</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="douyin-auto-publish" checked>
+                                                <label class="form-check-label">自动发布</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- B站配置 -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-tv text-primary"></i> 哔哩哔哩上传配置
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group mb-3">
+                                                <label>Cookie</label>
+                                                <textarea class="form-control" id="bilibili-cookie" rows="3" placeholder="请输入B站Cookie"></textarea>
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>分区</label>
+                                                <select class="form-control" id="bilibili-category">
+                                                    <option value="life">生活</option>
+                                                    <option value="tech">科技</option>
+                                                    <option value="entertainment">娱乐</option>
+                                                    <option value="knowledge">知识</option>
+                                                </select>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="bilibili-original" checked>
+                                                <label class="form-check-label">原创内容</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <!-- 小红书配置 -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-book text-danger"></i> 小红书上传配置
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group mb-3">
+                                                <label>账号Token</label>
+                                                <input type="password" class="form-control" id="xiaohongshu-token" placeholder="请输入小红书Token">
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>默认标签</label>
+                                                <input type="text" class="form-control" id="xiaohongshu-tags" placeholder="用逗号分隔多个标签">
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="xiaohongshu-watermark">
+                                                <label class="form-check-label">添加水印</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 通用上传设置 -->
+                                    <div class="card mb-3">
+                                        <div class="card-header">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-cogs"></i> 通用上传设置
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group mb-3">
+                                                <label>最大文件大小 (MB)</label>
+                                                <input type="number" class="form-control" id="max-file-size" value="500">
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>上传重试次数</label>
+                                                <input type="number" class="form-control" id="upload-retry" value="3">
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label>上传超时时间 (秒)</label>
+                                                <input type="number" class="form-control" id="upload-timeout" value="300">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系统配置 -->
+                        <div class="tab-pane fade" id="system-config" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">基础配置</h6>
+                                    <div class="form-group mb-3">
+                                        <label>系统名称</label>
+                                        <input type="text" class="form-control" value="视频自动化系统" id="system-name">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>系统版本</label>
+                                        <input type="text" class="form-control" value="v2.0.0" readonly>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>调试模式</label>
+                                        <select class="form-control" id="debug-mode">
+                                            <option value="true">开启</option>
+                                            <option value="false" selected>关闭</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>数据存储路径</label>
+                                        <input type="text" class="form-control" id="data-path" value="./data">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>临时文件路径</label>
+                                        <input type="text" class="form-control" id="temp-path" value="./temp">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">性能配置</h6>
+                                    <div class="form-group mb-3">
+                                        <label>最大并发任务数</label>
+                                        <input type="number" class="form-control" value="5" id="max-tasks">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>任务超时时间（秒）</label>
+                                        <input type="number" class="form-control" value="3600" id="task-timeout">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>日志级别</label>
+                                        <select class="form-control" id="log-level">
+                                            <option value="DEBUG">调试</option>
+                                            <option value="INFO" selected>信息</option>
+                                            <option value="WARNING">警告</option>
+                                            <option value="ERROR">错误</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>日志保留天数</label>
+                                        <input type="number" class="form-control" value="30" id="log-retention">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>监控刷新间隔（秒）</label>
+                                        <input type="number" class="form-control" value="5" id="monitor-interval">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">安全配置</h6>
+                                    <div class="form-group mb-3">
+                                        <label>会话超时时间（分钟）</label>
+                                        <input type="number" class="form-control" value="60" id="session-timeout">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>密码最小长度</label>
+                                        <input type="number" class="form-control" value="8" id="password-min-length">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-2fa">
+                                        <label class="form-check-label">启用双因素认证</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">备份配置</h6>
+                                    <div class="form-group mb-3">
+                                        <label>自动备份间隔（小时）</label>
+                                        <input type="number" class="form-control" value="24" id="backup-interval">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>备份保留数量</label>
+                                        <input type="number" class="form-control" value="7" id="backup-retention">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-auto-backup" checked>
+                                        <label class="form-check-label">启用自动备份</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 通知配置 -->
+                        <div class="tab-pane fade" id="notification-config" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">邮件通知</h6>
+                                    <div class="form-group mb-3">
+                                        <label>SMTP服务器</label>
+                                        <input type="text" class="form-control" id="smtp-server" placeholder="smtp.example.com">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>SMTP端口</label>
+                                        <input type="number" class="form-control" id="smtp-port" value="587">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>发送邮箱</label>
+                                        <input type="email" class="form-control" id="smtp-email" placeholder="noreply@example.com">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>邮箱密码</label>
+                                        <input type="password" class="form-control" id="smtp-password">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-email" checked>
+                                        <label class="form-check-label">启用邮件通知</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">微信通知</h6>
+                                    <div class="form-group mb-3">
+                                        <label>企业微信Webhook</label>
+                                        <input type="url" class="form-control" id="wechat-webhook" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-wechat">
+                                        <label class="form-check-label">启用微信通知</label>
+                                    </div>
+
+                                    <h6 class="mb-3 mt-4">钉钉通知</h6>
+                                    <div class="form-group mb-3">
+                                        <label>钉钉Webhook</label>
+                                        <input type="url" class="form-control" id="dingtalk-webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=...">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label>钉钉密钥</label>
+                                        <input type="password" class="form-control" id="dingtalk-secret">
+                                    </div>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-dingtalk">
+                                        <label class="form-check-label">启用钉钉通知</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mb-3">通知事件配置</h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-task-complete" checked>
+                                                <label class="form-check-label">任务完成</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-task-failed" checked>
+                                                <label class="form-check-label">任务失败</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-upload-complete" checked>
+                                                <label class="form-check-label">上传完成</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-system-error" checked>
+                                                <label class="form-check-label">系统错误</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-disk-full">
+                                                <label class="form-check-label">磁盘空间不足</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-high-cpu">
+                                                <label class="form-check-label">CPU使用率过高</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-daily-report" checked>
+                                                <label class="form-check-label">每日报告</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-weekly-report">
+                                                <label class="form-check-label">每周报告</label>
+                                            </div>
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" id="notify-backup-complete">
+                                                <label class="form-check-label">备份完成</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置状态 -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">配置状态</h6>
+                </div>
+                <div class="card-body">
+                    <div id="config-status">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <span>基础配置已加载</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            <span>部分上传配置未设置</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-times-circle text-danger me-2"></i>
+                            <span>通知配置未完成</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">快速操作</h6>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary btn-sm me-2 mb-2" onclick="testUploadConfig()">
+                        <i class="fas fa-test-tube"></i> 测试上传配置
+                    </button>
+                    <button class="btn btn-info btn-sm me-2 mb-2" onclick="testNotification()">
+                        <i class="fas fa-bell"></i> 测试通知
+                    </button>
+                    <button class="btn btn-warning btn-sm me-2 mb-2" onclick="resetToDefault()">
+                        <i class="fas fa-undo"></i> 恢复默认
+                    </button>
+                    <button class="btn btn-success btn-sm me-2 mb-2" onclick="validateConfig()">
+                        <i class="fas fa-check"></i> 验证配置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 保存所有配置
+function saveAllConfigs() {
+    const configs = {
+        upload: {
+            douyin_api_key: document.getElementById('douyin-api-key').value,
+            douyin_quality: document.getElementById('douyin-quality').value,
+            douyin_auto_publish: document.getElementById('douyin-auto-publish').checked,
+            bilibili_cookie: document.getElementById('bilibili-cookie').value,
+            bilibili_category: document.getElementById('bilibili-category').value,
+            bilibili_original: document.getElementById('bilibili-original').checked,
+            xiaohongshu_token: document.getElementById('xiaohongshu-token').value,
+            xiaohongshu_tags: document.getElementById('xiaohongshu-tags').value,
+            xiaohongshu_watermark: document.getElementById('xiaohongshu-watermark').checked,
+            max_file_size: document.getElementById('max-file-size').value,
+            upload_retry: document.getElementById('upload-retry').value,
+            upload_timeout: document.getElementById('upload-timeout').value
+        },
+        system: {
+            system_name: document.getElementById('system-name').value,
+            debug_mode: document.getElementById('debug-mode').value === 'true',
+            data_path: document.getElementById('data-path').value,
+            temp_path: document.getElementById('temp-path').value,
+            max_tasks: parseInt(document.getElementById('max-tasks').value),
+            task_timeout: parseInt(document.getElementById('task-timeout').value),
+            log_level: document.getElementById('log-level').value,
+            log_retention: parseInt(document.getElementById('log-retention').value),
+            monitor_interval: parseInt(document.getElementById('monitor-interval').value),
+            session_timeout: parseInt(document.getElementById('session-timeout').value),
+            password_min_length: parseInt(document.getElementById('password-min-length').value),
+            enable_2fa: document.getElementById('enable-2fa').checked,
+            backup_interval: parseInt(document.getElementById('backup-interval').value),
+            backup_retention: parseInt(document.getElementById('backup-retention').value),
+            enable_auto_backup: document.getElementById('enable-auto-backup').checked
+        },
+        notification: {
+            smtp_server: document.getElementById('smtp-server').value,
+            smtp_port: parseInt(document.getElementById('smtp-port').value),
+            smtp_email: document.getElementById('smtp-email').value,
+            smtp_password: document.getElementById('smtp-password').value,
+            enable_email: document.getElementById('enable-email').checked,
+            wechat_webhook: document.getElementById('wechat-webhook').value,
+            enable_wechat: document.getElementById('enable-wechat').checked,
+            dingtalk_webhook: document.getElementById('dingtalk-webhook').value,
+            dingtalk_secret: document.getElementById('dingtalk-secret').value,
+            enable_dingtalk: document.getElementById('enable-dingtalk').checked,
+            notify_task_complete: document.getElementById('notify-task-complete').checked,
+            notify_task_failed: document.getElementById('notify-task-failed').checked,
+            notify_upload_complete: document.getElementById('notify-upload-complete').checked,
+            notify_system_error: document.getElementById('notify-system-error').checked,
+            notify_disk_full: document.getElementById('notify-disk-full').checked,
+            notify_high_cpu: document.getElementById('notify-high-cpu').checked,
+            notify_daily_report: document.getElementById('notify-daily-report').checked,
+            notify_weekly_report: document.getElementById('notify-weekly-report').checked,
+            notify_backup_complete: document.getElementById('notify-backup-complete').checked
+        }
+    };
+
+    fetch('/api/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(configs)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', '配置保存成功！');
+        } else {
+            showAlert('error', '配置保存失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('保存配置失败:', error);
+        showAlert('error', '配置保存失败：' + error.message);
+    });
+}
+
+// 测试上传配置
+function testUploadConfig() {
+    showAlert('info', '正在测试上传配置...');
+    
+    fetch('/api/test-upload-config', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', '上传配置测试通过！');
+        } else {
+            showAlert('error', '上传配置测试失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', '测试失败：' + error.message);
+    });
+}
+
+// 测试通知
+function testNotification() {
+    showAlert('info', '正在发送测试通知...');
+    
+    fetch('/api/test-notification', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', '测试通知发送成功！');
+        } else {
+            showAlert('error', '测试通知发送失败：' + data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', '发送失败：' + error.message);
+    });
+}
+
+// 恢复默认配置
+function resetToDefault() {
+    if (confirm('确定要恢复默认配置吗？这将覆盖当前所有设置。')) {
+        fetch('/api/reset-config', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', '已恢复默认配置！');
+                location.reload();
+            } else {
+                showAlert('error', '恢复默认配置失败：' + data.error);
+            }
+        })
+        .catch(error => {
+            showAlert('error', '操作失败：' + error.message);
+        });
+    }
+}
+
+// 验证配置
+function validateConfig() {
+    fetch('/api/validate-config', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.valid) {
+            showAlert('success', '配置验证通过！');
+        } else {
+            showAlert('warning', '配置验证发现问题：' + data.errors.join(', '));
+        }
+    })
+    .catch(error => {
+        showAlert('error', '验证失败：' + error.message);
+    });
+}
+
+// 导出配置
+function exportConfig() {
+    fetch('/api/export-config')
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'system-config-' + new Date().toISOString().split('T')[0] + '.json';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        showAlert('success', '配置导出成功！');
+    })
+    .catch(error => {
+        showAlert('error', '导出失败：' + error.message);
+    });
+}
+
+// 导入配置
+function importConfig() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    
+                    fetch('/api/import-config', {
+                    fetch('/api/import-config', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(config)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showAlert('success', '配置导入成功！');
+                            location.reload();
+                        } else {
+                            showAlert('error', '配置导入失败：' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        showAlert('error', '导入失败：' + error.message);
+                    });
+                } catch (error) {
+                    showAlert('error', '配置文件格式错误：' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 加载当前配置
+    loadCurrentConfig();
+    
+    // 绑定标签页切换事件
+    const tabs = document.querySelectorAll('#configTabs button[data-bs-toggle="tab"]');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            const target = e.target.getAttribute('data-bs-target');
+            console.log('切换到标签页:', target);
+        });
+    });
+});
+
+// 加载当前配置
+function loadCurrentConfig() {
+    fetch('/api/config')
+    .then(response => response.json())
+    .then(data => {
+        if (data) {
+            // 填充表单数据
+            fillFormData(data);
+        }
+    })
+    .catch(error => {
+        console.error('加载配置失败:', error);
+    });
+}
+
+// 填充表单数据
+function fillFormData(data) {
+    // 这里可以根据返回的数据填充表单
+    console.log('配置数据:', data);
+}
+</script>
+{% endblock %}

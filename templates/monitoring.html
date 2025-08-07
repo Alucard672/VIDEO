@@ -1,0 +1,554 @@
+{% extends "base.html" %}
+
+{% block title %}系统监控 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-desktop"></i>
+        系统监控
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshMonitoring()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportMetrics()">
+                <i class="fas fa-download"></i> 导出数据
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 实时系统指标 -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="metric-value" id="cpu-usage">{{ metrics.cpu_percent|round(1) }}%</div>
+                <div class="metric-label">CPU使用率</div>
+                <div class="progress progress-custom mt-2">
+                    <div class="progress-bar" id="cpu-progress" style="width: {{ metrics.cpu_percent }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="metric-value" id="memory-usage">{{ metrics.memory_percent|round(1) }}%</div>
+                <div class="metric-label">内存使用率</div>
+                <div class="progress progress-custom mt-2">
+                    <div class="progress-bar" id="memory-progress" style="width: {{ metrics.memory_percent }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="metric-value" id="disk-usage">{{ metrics.disk_percent|round(1) }}%</div>
+                <div class="metric-label">磁盘使用率</div>
+                <div class="progress progress-custom mt-2">
+                    <div class="progress-bar" id="disk-progress" style="width: {{ metrics.disk_percent }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-4">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <div class="metric-value" id="network-speed">0 MB/s</div>
+                <div class="metric-label">网络速度</div>
+                <div class="progress progress-custom mt-2">
+                    <div class="progress-bar" id="network-progress" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统性能图表 -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-area"></i>
+                    系统性能趋势
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performanceChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    系统警报
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="system-alerts">
+                    <div class="alert alert-warning alert-sm" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>CPU使用率较高</strong><br>
+                        <small>当前CPU使用率超过80%，建议检查运行中的任务</small>
+                        <div class="text-muted mt-1">
+                            <small>5分钟前</small>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info alert-sm" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>系统正常运行</strong><br>
+                        <small>所有核心服务运行正常</small>
+                        <div class="text-muted mt-1">
+                            <small>10分钟前</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 进程监控 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks"></i>
+                    进程监控
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover table-custom">
+                        <thead>
+                            <tr>
+                                <th>进程名称</th>
+                                <th>PID</th>
+                                <th>CPU使用率</th>
+                                <th>内存使用</th>
+                                <th>状态</th>
+                                <th>运行时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="process-list">
+                            <tr>
+                                <td>
+                                    <i class="fas fa-cog text-primary"></i>
+                                    视频处理服务
+                                </td>
+                                <td>1234</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">15.2%</span>
+                                        <div class="progress progress-custom" style="width: 60px; height: 6px;">
+                                            <div class="progress-bar" style="width: 15%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>256 MB</td>
+                                <td>
+                                    <span class="status-badge status-running">运行中</span>
+                                </td>
+                                <td>2小时15分</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="restartProcess(1234)">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="stopProcess(1234)">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <i class="fas fa-upload text-success"></i>
+                                    上传服务
+                                </td>
+                                <td>5678</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2">8.7%</span>
+                                        <div class="progress progress-custom" style="width: 60px; height: 6px;">
+                                            <div class="progress-bar" style="width: 9%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>128 MB</td>
+                                <td>
+                                    <span class="status-badge status-running">运行中</span>
+                                </td>
+                                <td>1小时30分</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="restartProcess(5678)">
+                                        <i class="fas fa-redo"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="stopProcess(5678)">
+                                        <i class="fas fa-stop"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 日志监控 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-alt"></i>
+                        实时日志
+                    </h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="clearLogs()">
+                            <i class="fas fa-trash"></i> 清空
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="downloadLogs()">
+                            <i class="fas fa-download"></i> 下载
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="log-container" style="height: 300px; overflow-y: auto; background-color: #1e1e1e; color: #ffffff; font-family: 'Courier New', monospace; padding: 15px; border-radius: 5px;">
+                    <div class="log-entry">
+                        <span class="text-muted">[2024-01-15 14:30:25]</span>
+                        <span class="text-info">[INFO]</span>
+                        <span>系统启动完成</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="text-muted">[2024-01-15 14:30:30]</span>
+                        <span class="text-success">[SUCCESS]</span>
+                        <span>视频处理服务已启动</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="text-muted">[2024-01-15 14:31:15]</span>
+                        <span class="text-warning">[WARNING]</span>
+                        <span>CPU使用率较高: 85%</span>
+                    </div>
+                    <div class="log-entry">
+                        <span class="text-muted">[2024-01-15 14:32:00]</span>
+                        <span class="text-info">[INFO]</span>
+                        <span>开始处理视频任务: task_001</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let performanceChart;
+
+// 初始化性能图表
+function initPerformanceChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'CPU使用率 (%)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: '内存使用率 (%)',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: '磁盘使用率 (%)',
+                    data: [],
+                    borderColor: 'rgb(255, 205, 86)',
+                    backgroundColor: 'rgba(255, 205, 86, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 0
+            }
+        }
+    });
+}
+
+// 更新系统指标
+function updateSystemMetrics(metrics) {
+    // 更新指标卡片
+    document.getElementById('cpu-usage').textContent = metrics.cpu_percent.toFixed(1) + '%';
+    document.getElementById('cpu-progress').style.width = metrics.cpu_percent + '%';
+    
+    document.getElementById('memory-usage').textContent = metrics.memory_percent.toFixed(1) + '%';
+    document.getElementById('memory-progress').style.width = metrics.memory_percent + '%';
+    
+    document.getElementById('disk-usage').textContent = metrics.disk_percent.toFixed(1) + '%';
+    document.getElementById('disk-progress').style.width = metrics.disk_percent + '%';
+    
+    // 更新图表
+    const chart = performanceChart;
+    const now = new Date().toLocaleTimeString();
+    
+    chart.data.labels.push(now);
+    chart.data.datasets[0].data.push(metrics.cpu_percent);
+    chart.data.datasets[1].data.push(metrics.memory_percent);
+    chart.data.datasets[2].data.push(metrics.disk_percent);
+    
+    // 保持最近30个数据点
+    if (chart.data.labels.length > 30) {
+        chart.data.labels.shift();
+        chart.data.datasets.forEach(dataset => dataset.data.shift());
+    }
+    
+    chart.update('none');
+    
+    // 检查警报条件
+    checkAlerts(metrics);
+}
+
+// 检查系统警报
+function checkAlerts(metrics) {
+    const alertsContainer = document.getElementById('system-alerts');
+    
+    // CPU使用率警报
+    if (metrics.cpu_percent > 80) {
+        addAlert('warning', 'CPU使用率过高', `当前CPU使用率: ${metrics.cpu_percent.toFixed(1)}%`);
+    }
+    
+    // 内存使用率警报
+    if (metrics.memory_percent > 90) {
+        addAlert('danger', '内存不足', `当前内存使用率: ${metrics.memory_percent.toFixed(1)}%`);
+    }
+    
+    // 磁盘使用率警报
+    if (metrics.disk_percent > 85) {
+        addAlert('warning', '磁盘空间不足', `当前磁盘使用率: ${metrics.disk_percent.toFixed(1)}%`);
+    }
+}
+
+// 添加警报
+function addAlert(type, title, message) {
+    const alertsContainer = document.getElementById('system-alerts');
+    const existingAlerts = alertsContainer.querySelectorAll('.alert');
+    
+    // 限制警报数量
+    if (existingAlerts.length >= 5) {
+        existingAlerts[existingAlerts.length - 1].remove();
+    }
+    
+    const alertElement = document.createElement('div');
+    alertElement.className = `alert alert-${type} alert-sm fade-in`;
+    alertElement.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>${title}</strong><br>
+        <small>${message}</small>
+        <div class="text-muted mt-1">
+            <small>刚刚</small>
+        </div>
+    `;
+    
+    alertsContainer.insertBefore(alertElement, alertsContainer.firstChild);
+}
+
+// 添加日志条目
+function addLogEntry(level, message) {
+    const logContainer = document.getElementById('log-container');
+    const timestamp = new Date().toLocaleString();
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = 'log-entry';
+    
+    let levelClass = 'text-info';
+    if (level === 'ERROR') levelClass = 'text-danger';
+    else if (level === 'WARNING') levelClass = 'text-warning';
+    else if (level === 'SUCCESS') levelClass = 'text-success';
+    
+    logEntry.innerHTML = `
+        <span class="text-muted">[${timestamp}]</span>
+        <span class="${levelClass}">[${level}]</span>
+        <span>${message}</span>
+    `;
+    
+    logContainer.appendChild(logEntry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+    
+    // 限制日志条目数量
+    const logEntries = logContainer.querySelectorAll('.log-entry');
+    if (logEntries.length > 100) {
+        logEntries[0].remove();
+    }
+}
+
+// 刷新监控数据
+function refreshMonitoring() {
+    apiRequest('/api/monitoring/current-metrics')
+        .then(data => {
+            updateSystemMetrics(data);
+            showNotification('监控数据已刷新', 'success');
+        })
+        .catch(error => {
+            showNotification('刷新失败: ' + error.message, 'error');
+        });
+}
+
+// 导出指标数据
+function exportMetrics() {
+    const data = {
+        timestamp: new Date().toISOString(),
+        metrics: performanceChart.data
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system-metrics-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('指标数据已导出', 'success');
+}
+
+// 重启进程
+function restartProcess(pid) {
+    confirmAction(`确定要重启进程 ${pid} 吗？`, () => {
+        apiRequest(`/api/processes/${pid}/restart`, {
+            method: 'POST'
+        })
+        .then(data => {
+            showNotification(`进程 ${pid} 重启成功`, 'success');
+            addLogEntry('INFO', `进程 ${pid} 已重启`);
+        })
+        .catch(error => {
+            showNotification('重启失败: ' + error.message, 'error');
+            addLogEntry('ERROR', `进程 ${pid} 重启失败: ${error.message}`);
+        });
+    });
+}
+
+// 停止进程
+function stopProcess(pid) {
+    confirmAction(`确定要停止进程 ${pid} 吗？`, () => {
+        apiRequest(`/api/processes/${pid}/stop`, {
+            method: 'POST'
+        })
+        .then(data => {
+            showNotification(`进程 ${pid} 已停止`, 'success');
+            addLogEntry('INFO', `进程 ${pid} 已停止`);
+        })
+        .catch(error => {
+            showNotification('停止失败: ' + error.message, 'error');
+            addLogEntry('ERROR', `进程 ${pid} 停止失败: ${error.message}`);
+        });
+    });
+}
+
+// 清空日志
+function clearLogs() {
+    document.getElementById('log-container').innerHTML = '';
+    showNotification('日志已清空', 'info');
+}
+
+// 下载日志
+function downloadLogs() {
+    const logContainer = document.getElementById('log-container');
+    const logText = logContainer.innerText;
+    
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `system-logs-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('日志已下载', 'success');
+}
+
+// Socket.IO事件监听
+socket.on('system_metrics', function(data) {
+    updateSystemMetrics(data);
+});
+
+socket.on('system_log', function(data) {
+    addLogEntry(data.level, data.message);
+});
+
+socket.on('process_update', function(data) {
+    // 更新进程列表
+    updateProcessList(data);
+});
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initPerformanceChart();
+    
+    // 请求初始数据
+    refreshMonitoring();
+    
+    // 定期刷新数据
+    setInterval(refreshMonitoring, 5000); // 每5秒刷新一次
+});
+</script>
+{% endblock %}

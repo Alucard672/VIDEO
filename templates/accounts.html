@@ -1,0 +1,1212 @@
+{% extends "base.html" %}
+
+{% block title %}账户管理 - 视频搬运矩阵自动化系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-user-cog"></i>
+        账户管理
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshAccountList()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button type="button" class="btn btn-sm btn-success" onclick="showAddAccountModal()">
+                <i class="fas fa-plus"></i> 添加账户
+            </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="testAllAccounts()">
+                <i class="fas fa-check-double"></i> 批量测试
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            总账户数
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalAccounts">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            正常账户
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeAccounts">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            异常账户
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="errorAccounts">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            今日发布
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="todayPublished">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-share fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 平台标签页 -->
+<ul class="nav nav-tabs mb-4" id="platformTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-accounts" type="button" role="tab">
+            <i class="fas fa-globe"></i> 全部账户 <span class="badge bg-secondary ms-1" id="allCount">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="douyin-tab" data-bs-toggle="tab" data-bs-target="#douyin-accounts" type="button" role="tab">
+            <i class="fab fa-tiktok"></i> 抖音 <span class="badge bg-secondary ms-1" id="douyinCount">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="xiaohongshu-tab" data-bs-toggle="tab" data-bs-target="#xiaohongshu-accounts" type="button" role="tab">
+            <i class="fas fa-book"></i> 小红书 <span class="badge bg-secondary ms-1" id="xiaohongshuCount">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="bilibili-tab" data-bs-toggle="tab" data-bs-target="#bilibili-accounts" type="button" role="tab">
+            <i class="fas fa-tv"></i> 哔哩哔哩 <span class="badge bg-secondary ms-1" id="bilibiliCount">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="kuaishou-tab" data-bs-toggle="tab" data-bs-target="#kuaishou-accounts" type="button" role="tab">
+            <i class="fas fa-video"></i> 快手 <span class="badge bg-secondary ms-1" id="kuaishouCount">0</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="youtube-tab" data-bs-toggle="tab" data-bs-target="#youtube-accounts" type="button" role="tab">
+            <i class="fab fa-youtube"></i> YouTube <span class="badge bg-secondary ms-1" id="youtubeCount">0</span>
+        </button>
+    </li>
+</ul>
+
+<!-- 账户列表内容 -->
+<div class="tab-content" id="platformTabContent">
+    <!-- 全部账户 -->
+    <div class="tab-pane fade show active" id="all-accounts" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i>
+                        全部账户
+                    </h5>
+                    <div class="input-group" style="width: 300px;">
+                        <input type="text" class="form-control" id="searchInput" placeholder="搜索账户名称..." onkeyup="searchAccounts()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchAccounts()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>账户名称</th>
+                                <th>平台</th>
+                                <th>状态</th>
+                                <th>粉丝数</th>
+                                <th>今日发布</th>
+                                <th>最后测试</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accountTableBody">
+                            <!-- 表格行将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 分页 -->
+                <nav aria-label="账户列表分页" class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 其他平台标签页内容将通过JavaScript动态生成 -->
+    <div class="tab-pane fade" id="douyin-accounts" role="tabpanel">
+        <div id="douyinAccountList"></div>
+    </div>
+    <div class="tab-pane fade" id="xiaohongshu-accounts" role="tabpanel">
+        <div id="xiaohongshuAccountList"></div>
+    </div>
+    <div class="tab-pane fade" id="bilibili-accounts" role="tabpanel">
+        <div id="bilibiliAccountList"></div>
+    </div>
+    <div class="tab-pane fade" id="kuaishou-accounts" role="tabpanel">
+        <div id="kuaishouAccountList"></div>
+    </div>
+    <div class="tab-pane fade" id="youtube-accounts" role="tabpanel">
+        <div id="youtubeAccountList"></div>
+    </div>
+</div>
+
+<!-- 添加账户模态框 -->
+<div class="modal fade" id="addAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加账户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAccountForm">
+                    <div class="mb-3">
+                        <label for="accountPlatform" class="form-label">选择平台</label>
+                        <select class="form-select" id="accountPlatform" required onchange="updateAccountForm()">
+                            <option value="">请选择平台</option>
+                            <option value="douyin">抖音</option>
+                            <option value="xiaohongshu">小红书</option>
+                            <option value="bilibili">哔哩哔哩</option>
+                            <option value="kuaishou">快手</option>
+                            <option value="youtube">YouTube</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="accountName" class="form-label">账户名称</label>
+                        <input type="text" class="form-control" id="accountName" required placeholder="输入账户显示名称">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="accountUsername" class="form-label">用户名/邮箱</label>
+                        <input type="text" class="form-control" id="accountUsername" required placeholder="登录用户名或邮箱">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="accountPassword" class="form-label">密码</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="accountPassword" required placeholder="登录密码">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('accountPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 平台特定配置 -->
+                    <div id="platformSpecificConfig">
+                        <!-- 根据选择的平台动态显示不同的配置项 -->
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="accountDescription" class="form-label">描述</label>
+                        <textarea class="form-control" id="accountDescription" rows="2" placeholder="账户描述（可选）"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableAccount" checked>
+                            <label class="form-check-label" for="enableAccount">
+                                启用此账户
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="testAfterAdd" checked>
+                            <label class="form-check-label" for="testAfterAdd">
+                                添加后立即测试连接
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addAccount()">
+                    <i class="fas fa-plus"></i> 添加账户
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑账户模态框 -->
+<div class="modal fade" id="editAccountModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑账户</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAccountForm">
+                    <input type="hidden" id="editAccountId">
+                    
+                    <div class="mb-3">
+                        <label for="editAccountName" class="form-label">账户名称</label>
+                        <input type="text" class="form-control" id="editAccountName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editAccountUsername" class="form-label">用户名/邮箱</label>
+                        <input type="text" class="form-control" id="editAccountUsername" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editAccountPassword" class="form-label">密码</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="editAccountPassword" placeholder="留空表示不修改密码">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('editAccountPassword')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editAccountDescription" class="form-label">描述</label>
+                        <textarea class="form-control" id="editAccountDescription" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editEnableAccount">
+                            <label class="form-check-label" for="editEnableAccount">
+                                启用此账户
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="updateAccount()">
+                    <i class="fas fa-save"></i> 保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 账户详情模态框 -->
+<div class="modal fade" id="accountDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">账户详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">基本信息</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>账户名称：</strong></td>
+                                        <td id="detailAccountName">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>平台：</strong></td>
+                                        <td id="detailPlatform">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>用户名：</strong></td>
+                                        <td id="detailUsername">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>状态：</strong></td>
+                                        <td id="detailStatus">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>粉丝数：</strong></td>
+                                        <td id="detailFollowers">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>创建时间：</strong></td>
+                                        <td id="detailCreatedAt">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>最后测试：</strong></td>
+                                        <td id="detailLastTest">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">发布统计</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="border-end">
+                                            <h4 class="mb-0" id="detailTotalPublished">0</h4>
+                                            <small class="text-muted">总发布</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border-end">
+                                            <h4 class="mb-0" id="detailTodayPublished">0</h4>
+                                            <small class="text-muted">今日发布</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <h4 class="mb-0" id="detailSuccessRate">0%</h4>
+                                        <small class="text-muted">成功率</small>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">最近7天发布趋势</label>
+                                    <canvas id="publishTrendChart" height="100"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">最近发布记录</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>视频标题</th>
+                                                <th>发布时间</th>
+                                                <th>状态</th>
+                                                <th>播放量</th>
+                                                <th>点赞数</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentPublishTable">
+                                            <!-- 最近发布记录将通过JavaScript动态生成 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 操作日志 -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">操作日志</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="log-container" id="accountLogs" style="height: 200px; overflow-y: auto; background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                                    <!-- 日志将通过JavaScript动态生成 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-info" onclick="testAccountConnection()">
+                    <i class="fas fa-check"></i> 测试连接
+                </button>
+                <button type="button" class="btn btn-warning" onclick="editAccount()">
+                    <i class="fas fa-edit"></i> 编辑
+                </button>
+                <button type="button" class="btn btn-danger" onclick="deleteAccount()">
+                    <i class="fas fa-trash"></i> 删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 批量操作模态框 -->
+<div class="modal fade" id="batchOperationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">批量操作</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>已选择 <span id="selectedAccountCount">0</span> 个账户</p>
+                
+                <div class="mb-3">
+                    <label for="batchAccountOperation" class="form-label">选择操作</label>
+                    <select class="form-select" id="batchAccountOperation">
+                        <option value="">请选择操作</option>
+                        <option value="test">批量测试连接</option>
+                        <option value="enable">批量启用</option>
+                        <option value="disable">批量禁用</option>
+                        <option value="delete">批量删除</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="executeBatchAccountOperation()">
+                    <i class="fas fa-check"></i> 执行操作
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let selectedAccounts = new Set();
+let allAccounts = [];
+let filteredAccounts = [];
+let currentAccountId = null;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadAccountList();
+    loadStatistics();
+});
+
+// 加载账户列表
+function loadAccountList() {
+    apiRequest('/api/accounts')
+        .then(data => {
+            allAccounts = data.accounts || [];
+            filteredAccounts = [...allAccounts];
+            totalPages = Math.ceil(filteredAccounts.length / 10);
+            renderAccountList();
+            renderPagination();
+            updatePlatformCounts();
+        })
+        .catch(error => {
+            console.error('加载账户列表失败:', error);
+            showNotification('加载账户列表失败: ' + error.message, 'error');
+        });
+}
+
+// 加载统计数据
+function loadStatistics() {
+    apiRequest('/api/accounts/statistics')
+        .then(data => {
+            document.getElementById('totalAccounts').textContent = data.total || 0;
+            document.getElementById('activeAccounts').textContent = data.active || 0;
+            document.getElementById('errorAccounts').textContent = data.error || 0;
+            document.getElementById('todayPublished').textContent = data.today_published || 0;
+        })
+        .catch(error => {
+            console.error('加载统计数据失败:', error);
+        });
+}
+
+// 渲染账户列表
+function renderAccountList() {
+    const tbody = document.getElementById('accountTableBody');
+    const startIndex = (currentPage - 1) * 10;
+    const endIndex = Math.min(startIndex + 10, filteredAccounts.length);
+    const pageAccounts = filteredAccounts.slice(startIndex, endIndex);
+    
+    tbody.innerHTML = '';
+    
+    pageAccounts.forEach(account => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="form-check-input account-checkbox" 
+                       value="${account.id}" onchange="toggleAccountSelection(${account.id})">
+            </td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <img src="${account.avatar || '/static/images/default-avatar.png'}" 
+                         alt="头像" class="rounded-circle me-2" style="width: 32px; height: 32px;">
+                    <div>
+                        <div class="fw-bold">${account.name}</div>
+                        <small class="text-muted">${account.description || ''}</small>
+                    </div>
+                </div>
+            </td>
+            <td>${getPlatformBadge(account.platform)}</td>
+            <td>${getAccountStatusBadge(account.status)}</td>
+            <td>${formatNumber(account.followers || 0)}</td>
+            <td>${account.today_published || 0}</td>
+            <td>${formatDate(account.last_test_at)}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="showAccountDetail(${account.id})" title="查看详情">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="testAccount(${account.id})" title="测试连接">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="showEditAccountModal(${account.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteAccount(${account.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+}
+
+// 更新平台计数
+function updatePlatformCounts() {
+    const counts = {
+        all: allAccounts.length,
+        douyin: 0,
+        xiaohongshu: 0,
+        bilibili: 0,
+        kuaishou: 0,
+        youtube: 0
+    };
+    
+    allAccounts.forEach(account => {
+        if (counts.hasOwnProperty(account.platform)) {
+            counts[account.platform]++;
+        }
+    });
+    
+    document.getElementById('allCount').textContent = counts.all;
+    document.getElementById('douyinCount').textContent = counts.douyin;
+    document.getElementById('xiaohongshuCount').textContent = counts.xiaohongshu;
+    document.getElementById('bilibiliCount').textContent = counts.bilibili;
+    document.getElementById('kuaishouCount').textContent = counts.kuaishou;
+    document.getElementById('youtubeCount').textContent = counts.youtube;
+}
+
+// 获取平台徽章
+function getPlatformBadge(platform) {
+    const platformMap = {
+        'douyin': '<span class="badge bg-dark">抖音</span>',
+        'xiaohongshu': '<span class="badge bg-danger">小红书</span>',
+        'bilibili': '<span class="badge bg-primary">哔哩哔哩</span>',
+        'kuaishou': '<span class="badge bg-warning">快手</span>',
+        'youtube': '<span class="badge bg-danger">YouTube</span>'
+    };
+    return platformMap[platform] || '<span class="badge bg-secondary">未知</span>';
+}
+
+// 获取账户状态徽章
+function getAccountStatusBadge(status) {
+    const statusMap = {
+        'active': '<span class="badge bg-success">正常</span>',
+        'error': '<span class="badge bg-danger">异常</span>',
+        'testing': '<span class="badge bg-warning">测试中</span>',
+        'disabled': '<span class="badge bg-secondary">已禁用</span>'
+    };
+    return statusMap[status] || '<span class="badge bg-secondary">未知</span>';
+}
+
+// 格式化数字
+function formatNumber(num) {
+    if (num >= 10000) {
+        return (num / 10000).toFixed(1) + 'w';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'k';
+    }
+    return num.toString();
+}
+
+// 格式化日期
+function formatDate(dateString) {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+}
+
+// 搜索账户
+function searchAccounts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        filteredAccounts = [...allAccounts];
+    } else {
+        filteredAccounts = allAccounts.filter(account => {
+            return account.name.toLowerCase().includes(searchTerm) ||
+                   account.username.toLowerCase().includes(searchTerm) ||
+                   (account.description && account.description.toLowerCase().includes(searchTerm));
+        });
+    }
+    
+    currentPage = 1;
+    totalPages = Math.ceil(filteredAccounts.length / 10);
+    renderAccountList();
+    renderPagination();
+}
+
+// 刷新账户列表
+function refreshAccountList() {
+    loadAccountList();
+    loadStatistics();
+    showNotification('账户列表已刷新', 'success');
+}
+
+// 显示添加账户模态框
+function showAddAccountModal() {
+    document.getElementById('addAccountForm').reset();
+    document.getElementById('platformSpecificConfig').innerHTML = '';
+    const modal = new bootstrap.Modal(document.getElementById('addAccountModal'));
+    modal.show();
+}
+
+// 更新账户表单
+function updateAccountForm() {
+    const platform = document.getElementById('accountPlatform').value;
+    const configContainer = document.getElementById('platformSpecificConfig');
+    
+    configContainer.innerHTML = '';
+    
+    if (platform === 'youtube') {
+        configContainer.innerHTML = `
+            <div class="mb-3">
+                <label for="youtubeApiKey" class="form-label">YouTube API Key</label>
+                <input type="password" class="form-control" id="youtubeApiKey" placeholder="YouTube Data API v3 密钥">
+                <div class="form-text">用于获取频道信息和上传视频</div>
+            </div>
+            <div class="mb-3">
+                <label for="youtubeChannelId" class="form-label">频道ID</label>
+                <input type="text" class="form-control" id="youtubeChannelId" placeholder="YouTube频道ID">
+            </div>
+        `;
+    } else if (platform === 'bilibili') {
+        configContainer.innerHTML = `
+            <div class="mb-3">
+                <label for="bilibiliCookies" class="form-label">Cookies</label>
+                <textarea class="form-control" id="bilibiliCookies" rows="3" placeholder="从浏览器复制的完整cookies"></textarea>
+                <div class="form-text">用于保持登录状态</div>
+            </div>
+        `;
+    }
+}
+
+// 添加账户
+function addAccount() {
+    const form = document.getElementById('addAccountForm');
+    const platform = document.getElementById('accountPlatform').value;
+    const name = document.getElementById('accountName').value;
+    const username = document.getElementById('accountUsername').value;
+    const password = document.getElementById('accountPassword').value;
+    const description = document.getElementById('accountDescription').value;
+    const enabled = document.getElementById('enableAccount').checked;
+    const testAfterAdd = document.getElementById('testAfterAdd').checked;
+    
+    if (!platform || !name || !username || !password) {
+        showNotification('请填写所有必填字段', 'error');
+        return;
+    }
+    
+    const accountData = {
+        platform: platform,
+        name: name,
+        username: username,
+        password: password,
+        description: description,
+        enabled: enabled,
+        test_after_add: testAfterAdd
+    };
+    
+    // 添加平台特定配置
+    if (platform === 'youtube') {
+        accountData.api_key = document.getElementById('youtubeApiKey').value;
+        accountData.channel_id = document.getElementById('youtubeChannelId').value;
+    } else if (platform === 'bilibili') {
+        accountData.cookies = document.getElementById('bilibiliCookies').value;
+    }
+    
+    apiRequest('/api/accounts', {
+        method: 'POST',
+        body: accountData
+    })
+    .then(data => {
+        showNotification('账户添加成功', 'success');
+        
+        // 关闭模态框并刷新列表
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addAccountModal'));
+        modal.hide();
+        loadAccountList();
+        loadStatistics();
+    })
+    .catch(error => {
+        showNotification('添加账户失败: ' + error.message, 'error');
+    });
+}
+
+// 显示编辑账户模态框
+function showEditAccountModal(accountId) {
+    const account = allAccounts.find(acc => acc.id === accountId);
+    if (!account) return;
+    
+    document.getElementById('editAccountId').value = account.id;
+    document.getElementById('editAccountName').value = account.name;
+    document.getElementById('editAccountUsername').value = account.username;
+    document.getElementById('editAccountPassword').value = '';
+    document.getElementById('editAccountDescription').value = account.description || '';
+    document.getElementById('editEnableAccount').checked = account.enabled;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editAccountModal'));
+    modal.show();
+}
+
+// 更新账户
+function updateAccount() {
+    const accountId = document.getElementById('editAccountId').value;
+    const name = document.getElementById('editAccountName').value;
+    const username = document.getElementById('editAccountUsername').value;
+    const password = document.getElementById('editAccountPassword').value;
+    const description = document.getElementById('editAccountDescription').value;
+    const enabled = document.getElementById('editEnableAccount').checked;
+    
+    const accountData = {
+        name: name,
+        username: username,
+        description: description,
+        enabled: enabled
+    };
+    
+    if (password) {
+        accountData.password = password;
+    }
+    
+    apiRequest(`/api/accounts/${accountId}`, {
+        method: 'PUT',
+        body: accountData
+    })
+    .then(data => {
+        showNotification('账户更新成功', 'success');
+        
+        // 关闭模态框并刷新列表
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editAccountModal'));
+        modal.hide();
+        loadAccountList();
+    })
+    .catch(error => {
+        showNotification('更新账户失败: ' + error.message, 'error');
+    });
+}
+
+// 显示账户详情
+function showAccountDetail(accountId) {
+    currentAccountId = accountId;
+    
+    apiRequest(`/api/accounts/${accountId}`)
+        .then(account => {
+            // 填充基本信息
+            document.getElementById('detailAccountName').textContent = account.name;
+            document.getElementById('detailPlatform').innerHTML = getPlatformBadge(account.platform);
+            document.getElementById('detailUsername').textContent = account.username;
+            document.getElementById('detailStatus').innerHTML = getAccountStatusBadge(account.status);
+            document.getElementById('detailFollowers').textContent = formatNumber(account.followers || 0);
+            document.getElementById('detailCreatedAt').textContent = formatDate(account.created_at);
+            document.getElementById('detailLastTest').textContent = formatDate(account.last_test_at);
+            
+            // 填充统计信息
+            document.getElementById('detailTotalPublished').textContent = account.total_published || 0;
+            document.getElementById('detailTodayPublished').textContent = account.today_published || 0;
+            document.getElementById('detailSuccessRate').textContent = (account.success_rate || 0) + '%';
+            
+            // 渲染发布趋势图表
+            renderPublishTrendChart(account.publish_trend || []);
+            
+            // 填充最近发布记录
+            renderRecentPublishTable(account.recent_publishes || []);
+            
+            // 填充操作日志
+            renderAccountLogs(account.logs || []);
+            
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('accountDetailModal'));
+            modal.show();
+        })
+        .catch(error => {
+            showNotification('加载账户详情失败: ' + error.message, 'error');
+        });
+}
+
+// 渲染发布趋势图表
+function renderPublishTrendChart(trendData) {
+    const canvas = document.getElementById('publishTrendChart');
+    const ctx = canvas.getContext('2d');
+    
+    // 简单的图表绘制逻辑
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (trendData.length === 0) {
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('暂无数据', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    
+    const maxValue = Math.max(...trendData.map(d => d.count));
+    const barWidth = canvas.width / trendData.length;
+    
+    trendData.forEach((data, index) => {
+        const barHeight = (data.count / maxValue) * (canvas.height - 20);
+        const x = index * barWidth;
+        const y = canvas.height - barHeight;
+        
+        ctx.fillStyle = '#007bff';
+        ctx.fillRect(x + 2, y, barWidth - 4, barHeight);
+        
+        // 绘制数值
+        ctx.fillStyle = '#333';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(data.count, x + barWidth / 2, y - 5);
+    });
+}
+
+// 渲染最近发布记录表格
+function renderRecentPublishTable(publishes) {
+    const tbody = document.getElementById('recentPublishTable');
+    tbody.innerHTML = '';
+    
+    if (publishes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">暂无发布记录</td></tr>';
+        return;
+    }
+    
+    publishes.forEach(publish => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="text-truncate" style="max-width: 200px;" title="${publish.title}">${publish.title}</td>
+            <td>${formatDate(publish.published_at)}</td>
+            <td>${getPublishStatusBadge(publish.status)}</td>
+            <td>${formatNumber(publish.views || 0)}</td>
+            <td>${formatNumber(publish.likes || 0)}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 渲染账户日志
+function renderAccountLogs(logs) {
+    const container = document.getElementById('accountLogs');
+    container.innerHTML = '';
+    
+    if (logs.length === 0) {
+        container.innerHTML = '<div class="text-muted">暂无日志</div>';
+        return;
+    }
+    
+    logs.forEach(log => {
+        const logEntry = document.createElement('div');
+        logEntry.className = 'mb-1';
+        logEntry.innerHTML = `
+            <small class="text-muted">[${formatDate(log.timestamp)}]</small>
+            <span class="${getLogLevelClass(log.level)}">${log.message}</span>
+        `;
+        container.appendChild(logEntry);
+    });
+}
+
+// 获取发布状态徽章
+function getPublishStatusBadge(status) {
+    const statusMap = {
+        'success': '<span class="badge bg-success">成功</span>',
+        'failed': '<span class="badge bg-danger">失败</span>',
+        'pending': '<span class="badge bg-warning">待发布</span>'
+    };
+    return statusMap[status] || '<span class="badge bg-secondary">未知</span>';
+}
+
+// 获取日志级别样式
+function getLogLevelClass(level) {
+    const levelClasses = {
+        'ERROR': 'text-danger',
+        'WARNING': 'text-warning',
+        'INFO': 'text-info',
+        'DEBUG': 'text-muted'
+    };
+    return levelClasses[level] || 'text-dark';
+}
+
+// 测试账户连接
+function testAccount(accountId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    apiRequest(`/api/accounts/${accountId}/test`, {
+        method: 'POST'
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification('账户连接测试成功', 'success');
+        } else {
+            showNotification('账户连接测试失败: ' + data.message, 'error');
+        }
+        loadAccountList();
+    })
+    .catch(error => {
+        showNotification('测试失败: ' + error.message, 'error');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalContent;
+    });
+}
+
+// 测试所有账户
+function testAllAccounts() {
+    confirmAction('确定要测试所有账户的连接吗？这可能需要一些时间。', () => {
+        apiRequest('/api/accounts/test-all', {
+            method: 'POST'
+        })
+        .then(data => {
+            showNotification('批量测试已启动，请稍后查看结果', 'success');
+            setTimeout(() => {
+                loadAccountList();
+                loadStatistics();
+            }, 5000);
+        })
+        .catch(error => {
+            showNotification('批量测试失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 删除账户
+function deleteAccount(accountId) {
+    confirmAction('确定要删除这个账户吗？此操作不可撤销。', () => {
+        apiRequest(`/api/accounts/${accountId}`, {
+            method: 'DELETE'
+        })
+        .then(data => {
+            showNotification('账户已删除', 'success');
+            loadAccountList();
+            loadStatistics();
+        })
+        .catch(error => {
+            showNotification('删除失败: ' + error.message, 'error');
+        });
+    });
+}
+
+// 切换账户选择
+function toggleAccountSelection(accountId) {
+    if (selectedAccounts.has(accountId)) {
+        selectedAccounts.delete(accountId);
+    } else {
+        selectedAccounts.add(accountId);
+    }
+    
+    updateSelectedAccountCount();
+    updateSelectAllCheckbox();
+}
+
+// 全选/取消全选
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const accountCheckboxes = document.querySelectorAll('.account-checkbox');
+    
+    if (selectAllCheckbox.checked) {
+        accountCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+            selectedAccounts.add(parseInt(checkbox.value));
+        });
+    } else {
+        accountCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            selectedAccounts.delete(parseInt(checkbox.value));
+        });
+    }
+    
+    updateSelectedAccountCount();
+}
+
+// 更新选中数量
+function updateSelectedAccountCount() {
+    document.getElementById('selectedAccountCount').textContent = selectedAccounts.size;
+}
+
+// 更新全选复选框状态
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const accountCheckboxes = document.querySelectorAll('.account-checkbox');
+    const checkedCount = document.querySelectorAll('.account-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCount === accountCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+// 执行批量账户操作
+function executeBatchAccountOperation() {
+    const operation = document.getElementById('batchAccountOperation').value;
+    
+    if (!operation) {
+        showNotification('请选择要执行的操作', 'warning');
+        return;
+    }
+    
+    if (selectedAccounts.size === 0) {
+        showNotification('请先选择要操作的账户', 'warning');
+        return;
+    }
+    
+    const accountIds = Array.from(selectedAccounts);
+    
+    apiRequest(`/api/accounts/batch/${operation}`, {
+        method: 'POST',
+        body: { account_ids: accountIds }
+    })
+    .then(data => {
+        showNotification(`批量${getAccountOperationName(operation)}操作已完成`, 'success');
+        
+        // 关闭模态框并刷新列表
+        const modal = bootstrap.Modal.getInstance(document.getElementById('batchOperationModal'));
+        modal.hide();
+        selectedAccounts.clear();
+        loadAccountList();
+        loadStatistics();
+    })
+    .catch(error => {
+        showNotification(`批量操作失败: ${error.message}`, 'error');
+    });
+}
+
+// 获取操作名称
+function getAccountOperationName(operation) {
+    const operationNames = {
+        'test': '测试',
+        'enable': '启用',
+        'disable': '禁用',
+        'delete': '删除'
+    };
+    return operationNames[operation] || operation;
+}
+
+// 渲染分页
+function renderPagination() {
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // 上一页
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">上一页</a>`;
+    pagination.appendChild(prevLi);
+    
+    // 页码
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const li = document.createElement('li');
+        li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+        li.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
+        pagination.appendChild(li);
+    }
+    
+    // 下一页
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">下一页</a>`;
+    pagination.appendChild(nextLi);
+}
+
+// 切换页面
+function changePage(page) {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    currentPage = page;
+    renderAccountList();
+    renderPagination();
+}
+
+// 切换密码显示/隐藏
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+</script>
+{% endblock %}

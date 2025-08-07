@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}任务内容查看 - {{ task.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.content-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.article-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.article-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.article-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.article-meta {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.article-content {
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.article-tags {
+    margin-top: 1rem;
+}
+
+.tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.category-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.source-badge {
+    background: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+}
+
+.filter-section {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.no-content {
+    text-align: center;
+    padding: 3rem;
+    color: #666;
+}
+
+.back-button {
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 返回按钮 -->
+    <div class="back-button">
+        <a href="/tasks" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> 返回任务列表
+        </a>
+        <a href="/content" class="btn btn-outline-primary">
+            <i class="fas fa-list"></i> 内容管理
+        </a>
+    </div>
+
+    <!-- 页面标题 -->
+    <div class="content-header">
+        <div class="container">
+            <h1><i class="fas fa-newspaper"></i> 任务内容查看</h1>
+            <p class="mb-0">任务：{{ task.name }} ({{ task.task_type }})</p>
+            <small>状态：{{ task.status_text }} | 创建时间：{{ task.created_time }}</small>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 统计信息 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <h3 class="text-primary">{{ stats.total_articles }}</h3>
+                    <p class="mb-0">采集文章</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <h3 class="text-success">{{ stats.total_words }}</h3>
+                    <p class="mb-0">总字数</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <h3 class="text-info">{{ stats.categories|length }}</h3>
+                    <p class="mb-0">内容分类</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <h3 class="text-warning">{{ stats.sources|length }}</h3>
+                    <p class="mb-0">内容来源</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分类和来源信息 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-tags"></i> 内容分类</h5>
+                    {% for category in stats.categories %}
+                    <span class="category-badge me-2">{{ category }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-globe"></i> 内容来源</h5>
+                    {% for source in stats.sources %}
+                    <span class="source-badge me-2">{{ source }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 筛选和搜索 -->
+        <div class="filter-section">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">按分类筛选</label>
+                    <select class="form-select" id="categoryFilter" onchange="filterArticles()">
+                        <option value="">全部分类</option>
+                        {% for category in stats.categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">按来源筛选</label>
+                    <select class="form-select" id="sourceFilter" onchange="filterArticles()">
+                        <option value="">全部来源</option>
+                        {% for source in stats.sources %}
+                        <option value="{{ source }}">{{ source }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">搜索文章</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="输入标题或内容关键词..." onkeyup="searchArticles()">
+                </div>
+            </div>
+        </div>
+
+        <!-- 文章列表 -->
+        <div id="articlesContainer">
+            {% if articles %}
+            {% for article in articles %}
+            <div class="article-card" data-category="{{ article.category }}" data-source="{{ article.source }}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h3 class="article-title">{{ article.title }}</h3>
+                    <div>
+                        <span class="category-badge">{{ article.category }}</span>
+                        {% if article.source %}
+                        <span class="source-badge ms-2">{{ article.source }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="article-meta">
+                    <i class="fas fa-clock"></i> {{ article.created_time }}
+                    {% if article.author %}
+                    | <i class="fas fa-user"></i> {{ article.author }}
+                    {% endif %}
+                    | <i class="fas fa-font"></i> {{ article.word_count }} 字
+                    {% if article.source_url %}
+                    | <a href="{{ article.source_url }}" target="_blank" class="text-decoration-none">
+                        <i class="fas fa-external-link-alt"></i> 原文链接
+                    </a>
+                    {% endif %}
+                </div>
+                
+                <div class="article-content">
+                    {{ article.summary or article.content[:200] + '...' if article.content|length > 200 else article.content }}
+                </div>
+                
+                {% if article.tags %}
+                <div class="article-tags">
+                    {% for tag in article.tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <a href="/content/article/{{ article.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> 查看详情
+                    </a>
+                    <button class="btn btn-sm btn-outline-success" onclick="copyContent('{{ article.id }}')">
+                        <i class="fas fa-copy"></i> 复制内容
+                    </button>
+                    {% if article.source_url %}
+                    <a href="{{ article.source_url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-external-link-alt"></i> 访问原文
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-content">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h4>暂无采集内容</h4>
+                <p class="text-muted">该任务还没有采集到任何内容，或者内容正在处理中。</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterArticles() {
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const articles = document.querySelectorAll('.article-card');
+    
+    articles.forEach(article => {
+        const category = article.getAttribute('data-category');
+        const source = article.getAttribute('data-source');
+        
+        let showArticle = true;
+        
+        if (categoryFilter && category !== categoryFilter) {
+            showArticle = false;
+        }
+        
+        if (sourceFilter && source !== sourceFilter) {
+            showArticle = false;
+        }
+        
+        article.style.display = showArticle ? 'block' : 'none';
+    });
+}
+
+function searchArticles() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const articles = document.querySelectorAll('.article-card');
+    
+    articles.forEach(article => {
+        const title = article.querySelector('.article-title').textContent.toLowerCase();
+        const content = article.querySelector('.article-content').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || content.includes(searchTerm)) {
+            article.style.display = 'block';
+        } else {
+            article.style.display = 'none';
+        }
+    });
+}
+
+function copyContent(articleId) {
+    // 这里可以实现复制文章内容的功能
+    // 可以通过API获取完整内容然后复制到剪贴板
+    fetch(`/api/content/article/${articleId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const content = data.article.content;
+                navigator.clipboard.writeText(content).then(() => {
+                    showNotification('内容已复制到剪贴板', 'success');
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    showNotification('复制失败', 'error');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('获取文章内容失败:', error);
+            showNotification('获取文章内容失败', 'error');
+        });
+}
+
+function showNotification(message, type) {
+    // 简单的通知显示
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // 3秒后自动消失
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 3000);
+}
+
+// 页面加载完成后的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('内容查看页面已加载');
+});
+</script>
+{% endblock %}
